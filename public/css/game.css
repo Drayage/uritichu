@@ -324,32 +324,30 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   border: 1.5px solid rgba(201,184,245,0.35);
   padding: 8px 10px;
   min-width: 70px;
-  max-width: 240px;
+  max-width: min(320px, 90vw);
   box-shadow: 0 4px 20px rgba(100,80,160,0.15);
   z-index: 5;
 }
 
 /* Mini cards inside trick area */
 #trick-area .card {
-  width: 36px;
-  height: 51px;
+  width: 34px;
+  height: 48px;
   padding: 2px 2px;
   border-radius: 7px;
   flex-shrink: 0;
 }
 #trick-area .card .card-rank-top,
-#trick-area .card .card-rank-bot { font-size: 9px; line-height: 1.1; }
-#trick-area .card .card-suit { font-size: 13px; }
-#trick-area .card.special .card-suit { font-size: 17px; }
+#trick-area .card .card-rank-bot { font-size: 8px; line-height: 1.1; }
+#trick-area .card .card-suit { font-size: 12px; }
+#trick-area .card.special .card-suit { font-size: 16px; }
 
 .trick-play {
   display: flex;
   gap: 2px;
   justify-content: center;
-  flex-wrap: nowrap;
-  overflow-x: auto;
-  max-width: 220px;
-  -webkit-overflow-scrolling: touch;
+  flex-wrap: wrap;
+  max-width: 300px;
 }
 
 @keyframes cardPlay {
@@ -912,7 +910,8 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   .player-zone.east .opponent-cards { flex-direction: column; align-items: center; gap: 2px; }
 
   /* Trick area: capped */
-  #trick-area { max-width: 170px; padding: 6px 8px; }
+  #trick-area { max-width: min(290px, 88vw); padding: 6px 8px; }
+  .trick-play { max-width: min(270px, 84vw); }
 
   /* Hand area: 2-row card layout, taller */
   #hand-area { padding: 6px 8px 8px; min-height: 120px; max-height: 275px; gap: 5px; }
