@@ -3,6 +3,7 @@ import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
+import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame, openReplayModal, closeReplayModal, replayPrev, replayNext, replayBackToList } from './replay.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -16,6 +17,7 @@ let exchangePhase = false;
 let lastRoundPhase = null;
 let sortMode = 'rank'; // 'rank' | 'suit'
 let _lastExchangeCard = null;
+let _replayActive = false;
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -50,6 +52,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!gs || !gs.currentRound) return;
+
+    // Replay recording: start at first round's grand-tichu phase
+    const r0 = gs.currentRound;
+    if (!_replayActive && gs.rounds.length === 0 &&
+        (r0.phase === PHASE.DEAL_8 || r0.phase === PHASE.GRAND_TICHU)) {
+      startRecording(players);
+      _replayActive = true;
+    }
 
     // Detect pass/play events from state diff
     if (prevGs?.currentRound && gs.currentRound) detectStateEffects(prevGs, gs);
@@ -100,11 +110,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (r.phase === PHASE.ROUND_OVER && prevRoundPhase !== PHASE.ROUND_OVER) {
+      recordRoundEnd(r.scoreDeltas, r.finishOrder);
       showRoundOverModal(r, gs.totalScores);
       disableActions();
     }
 
     if (r.phase === PHASE.GAME_OVER) {
+      if (_replayActive) { saveGame(gs.totalScores); _replayActive = false; }
       hideModal('modal-round-over');
       showGameOverModal(gs.winningTeam, gs.totalScores);
     }
@@ -134,6 +146,7 @@ function handlePhaseChange(phase, gs, r) {
   if (phase === PHASE.PLAY && lastRoundPhase === PHASE.EXCHANGE) {
     hideModal('modal-exchange');
     exchangePhase = false;
+    recordRoundStart(r.hands);
     showReceivedCards(r);
     log('게임 시작!');
   }
@@ -874,6 +887,7 @@ function detectStateEffects(prev, curr) {
   // Trick won: pastTricks grew
   if (currPast > prevPast) {
     const wonTrick = cr.pastTricks[currPast - 1];
+    recordTrick(wonTrick);
     const pts = calcCardPoints(wonTrick.cards || []);
     // Detect last pass: trick ended by passing (no new play added since prev state)
     const prevPlaysLen = pr.currentTrick?.plays?.length ?? 0;
@@ -930,6 +944,11 @@ function showSurrenderModal() {
   showModal('modal-surrender');
 }
 window._showSurrenderModal = showSurrenderModal;
+window._openReplayModal = openReplayModal;
+window._closeReplayModal = closeReplayModal;
+window._replayPrev = replayPrev;
+window._replayNext = replayNext;
+window._replayBackToList = replayBackToList;
 
 // ── Trick points helpers ──
 function calcCardPoints(cards) {
