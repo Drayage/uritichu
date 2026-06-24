@@ -1,7 +1,7 @@
 import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
-import { detectCombination, canBeat, getBombs } from './engine/combinations.js';
+import { detectCombination, canBeat, getBombs, getValidMoves } from './engine/combinations.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -82,6 +82,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       updateHandCounts(handCounts);
       updateActivePlayer(r.activePlayerId);
       updateWishIndicator(r.wishRank);
+      updateTrickPoints(r);
       const isMyTurn = r.activePlayerId === myPlayerId;
       setStatus(isMyTurn ? '내 차례예요!' : `${getPlayerName(r.activePlayerId)}의 차례`);
       enableActions(isMyTurn, r.currentTrick);
@@ -278,6 +279,13 @@ function createCardEl(card, clickable = false) {
     const icon = SUIT_ICON[card.suit];
     el.innerHTML = `<div class="card-rank-top">${card.rank}</div><div class="card-suit">${icon}</div><div class="card-rank-bot">${card.rank}</div>`;
   }
+  const pts = card.pointValue || 0;
+  if (pts !== 0) {
+    const ptEl = document.createElement('div');
+    ptEl.className = 'card-pts' + (pts < 0 ? ' neg' : '');
+    ptEl.textContent = pts > 0 ? `+${pts}` : `${pts}`;
+    el.appendChild(ptEl);
+  }
   return el;
 }
 
@@ -350,8 +358,6 @@ function updateSelectedInfo() {
   if (!currentCombo) {
     hint.innerHTML = `<span class="hint-valid">✅ ${label}</span>`;
   } else {
-    const { canBeat } = window._engine || {};
-    // canBeat imported inline below
     const ok = canBeat(combo, currentCombo);
     hint.innerHTML = ok
       ? `<span class="hint-valid">✅ ${label}</span>`
@@ -485,6 +491,8 @@ function enableActions(isMyTurn, currentTrick) {
   document.getElementById('btn-pass').disabled = !isMyTurn || !currentTrick;
   document.getElementById('hand-area').classList.toggle('my-turn', isMyTurn);
   updateBombButton(currentTrick);
+  if (isMyTurn) updatePlayableHighlight(currentTrick);
+  else document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
 }
 
 function disableActions() {
@@ -733,6 +741,16 @@ function detectStateEffects(prev, curr) {
     const lastPlay = cr.currentTrick.plays[0];
     if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
   }
+
+  // Detect trick won: pastTricks grew → show who won and how many points
+  const prevPast = pr.pastTricks?.length || 0;
+  const currPast = cr.pastTricks?.length || 0;
+  if (currPast > prevPast) {
+    const wonTrick = cr.pastTricks[currPast - 1];
+    const pts = calcCardPoints(wonTrick.cards || []);
+    const winnerId = wonTrick.givenTo || wonTrick.winnerId;
+    showTrickWonToast(winnerId, pts);
+  }
 }
 
 function _getZoneEl(playerId) {
@@ -772,6 +790,65 @@ function showSurrenderModal() {
   showModal('modal-surrender');
 }
 window._showSurrenderModal = showSurrenderModal;
+
+// ── Trick points helpers ──
+function calcCardPoints(cards) {
+  return (cards || []).reduce((s, c) => s + (c.pointValue || 0), 0);
+}
+
+function updateTrickPoints(r) {
+  if (!r?.trickWinners) return;
+  // Calculate per-team cumulative trick points
+  const teamPts = { 0: 0, 1: 0 };
+  for (const [pid, cards] of Object.entries(r.trickWinners)) {
+    const p = players.find(x => x.id === pid);
+    if (!p) continue;
+    teamPts[p.teamIndex] += calcCardPoints(cards);
+  }
+  // Display under each player zone
+  for (const zone of ['north', 'west', 'east', 'me']) {
+    const pid = zone === 'me' ? myPlayerId : getPlayerIdForZone(zone);
+    const el = document.getElementById(`trick-pts-${zone}`);
+    if (!el || !pid) continue;
+    const p = players.find(x => x.id === pid);
+    if (!p) continue;
+    const pts = teamPts[p.teamIndex];
+    el.textContent = pts !== 0 ? `${pts}점` : '';
+  }
+}
+
+function showTrickWonToast(winnerId, pts) {
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast';
+  const name = getPlayerName(winnerId);
+  toast.textContent = pts !== 0
+    ? `${name} ${pts > 0 ? '+' : ''}${pts}점 획득!`
+    : `${name} 먹음`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1800);
+}
+
+// ── Playable highlight ──
+function updatePlayableHighlight(currentTrick) {
+  document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
+  document.getElementById('btn-pass')?.classList.remove('pulse-hint');
+
+  // Lead turn: no trick to beat — don't highlight
+  if (!currentTrick || !currentTrick.winningCombo) return;
+
+  const r = currentGs?.currentRound;
+  const validMoves = getValidMoves(myHand, currentTrick.winningCombo, r?.wishRank || null);
+
+  if (validMoves.length === 0) {
+    document.getElementById('btn-pass')?.classList.add('pulse-hint');
+  } else {
+    const playableIds = new Set();
+    for (const move of validMoves) move.cards.forEach(c => playableIds.add(c.id));
+    document.querySelectorAll('#my-hand .card').forEach(el => {
+      if (playableIds.has(el.dataset.id)) el.classList.add('playable');
+    });
+  }
+}
 
 // ── Utils ──
 function showModal(id) { document.getElementById(id).style.display = 'flex'; }

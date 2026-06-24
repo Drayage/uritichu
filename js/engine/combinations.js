@@ -63,8 +63,12 @@ function detectTriple(sorted, hasPhoenix, orig) {
 function detectLen4(sorted, hasPhoenix, orig) {
   if (!hasPhoenix && sorted.length === 4 && sorted.every(c => c.numericValue === sorted[0].numericValue))
     return { type: TYPE.BOMB_QUAD, cards: orig, rank: sorted[0].numericValue, length: 4, isBomb: true };
+  // Phoenix + 2 same rank = triple (logical length 3, not 4)
   if (hasPhoenix && sorted.length === 3 && sorted.every(c => c.numericValue === sorted[0].numericValue))
-    return { type: TYPE.TRIPLE, cards: orig, rank: sorted[0].numericValue, length: 4, isBomb: false };
+    return { type: TYPE.TRIPLE, cards: orig, rank: sorted[0].numericValue, length: 3, isBomb: false };
+  // 4-card steps (2 consecutive pairs), e.g. 3-3-4-4 or 3-4-4+phoenix
+  const steps = trySteps(sorted, hasPhoenix, 4);
+  if (steps) return { type: TYPE.STEPS, cards: orig, rank: steps.topRank, length: 4, isBomb: false };
   return null;
 }
 
