@@ -4,6 +4,9 @@ on:
   push:
     branches: [claude/tichoo-game-html-ova4bs]
 
+permissions:
+  contents: write
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
