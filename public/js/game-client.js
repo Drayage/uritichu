@@ -1,7 +1,7 @@
 import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
-import { detectCombination, canBeat, getBombs, getValidMoves } from './engine/combinations.js';
+import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -14,6 +14,7 @@ let exchangeSelection = { left: null, across: null, right: null };
 let exchangePhase = false;
 let lastRoundPhase = null;
 let sortMode = 'rank'; // 'rank' | 'suit'
+let _lastExchangeCard = null;
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -132,6 +133,7 @@ function handlePhaseChange(phase, gs, r) {
   if (phase === PHASE.PLAY && lastRoundPhase === PHASE.EXCHANGE) {
     hideModal('modal-exchange');
     exchangePhase = false;
+    showReceivedCards(r);
     log('게임 시작!');
   }
 }
@@ -311,12 +313,20 @@ function toggleSelect(card, el) {
   if (selectedIds.has(card.id)) { selectedIds.delete(card.id); el.classList.remove('selected'); }
   else { selectedIds.add(card.id); el.classList.add('selected'); }
   updateSelectedInfo();
+  updateCombinableHighlight();
 }
 
 function comboLabel(combo) {
   if (!combo) return '';
+  // Phoenix single: rank is stored as float (e.g. 8.5) after adjustment
+  if (combo.type === TYPE.SINGLE && combo.cards?.length === 1 && combo.cards[0]?.rank === 'phoenix') {
+    if (typeof combo.rank === 'number' && !Number.isInteger(combo.rank)) {
+      const base = Math.round(combo.rank - 0.5);
+      return `🦚 불사조 단장 (현재값 ${combo.rank} · ${base}보다 강함)`;
+    }
+  }
   const rv = { '-1': '불사조', 0: '개', 1: '참새', 16: '용' };
-  const r = rv[combo.rank] ?? combo.rank;
+  const r = rv[String(combo.rank)] ?? combo.rank;
   return ({
     single: `단장 ${r}`,
     pair: `페어 ${r}`,
@@ -610,6 +620,7 @@ function showGrandTichuModal(hand8) {
 function showExchangeModal() {
   exchangePhase = true;
   exchangeSelection = { left: null, across: null, right: null };
+  _lastExchangeCard = null;
   const slots = document.getElementById('exchange-slots');
   slots.innerHTML = '';
   const dirs = [{ key: 'left', label: '왼쪽 상대' }, { key: 'across', label: '파트너' }, { key: 'right', label: '오른쪽 상대' }];
@@ -644,10 +655,27 @@ function renderExchangeHand() {
   const container = document.getElementById('exchange-hand');
   container.innerHTML = '';
   const selectedInSlots = new Set(Object.values(exchangeSelection).filter(Boolean).map(c => c.id));
+
+  // Combinable highlight: cards that share combos with the last selected exchange card
+  let combinableIds = new Set();
+  if (_lastExchangeCard) {
+    const allCombos = getValidMoves(myHand, null, null);
+    for (const combo of allCombos) {
+      if (combo.cards.some(c => c.id === _lastExchangeCard.id)) {
+        for (const c of combo.cards) {
+          if (c.id !== _lastExchangeCard.id && !selectedInSlots.has(c.id)) combinableIds.add(c.id);
+        }
+      }
+    }
+  }
+
   for (const card of sortHand(myHand)) {
     const el = createCardEl(card, true);
     if (selectedInSlots.has(card.id)) { el.classList.add('dim'); el.style.cursor = 'default'; }
-    else el.addEventListener('click', () => handleExchangeSelect(card));
+    else {
+      el.addEventListener('click', () => handleExchangeSelect(card));
+      if (combinableIds.has(card.id)) el.classList.add('combinable');
+    }
     container.appendChild(el);
   }
 }
@@ -656,6 +684,7 @@ function handleExchangeSelect(card) {
   for (const key of ['left', 'across', 'right']) {
     if (!exchangeSelection[key]) {
       exchangeSelection[key] = card;
+      _lastExchangeCard = card;
       const box = document.getElementById(`slot-${key}`);
       box.innerHTML = '';
       box.classList.add('filled');
@@ -925,6 +954,91 @@ function updatePlayableHighlight(currentTrick) {
       if (playableIds.has(el.dataset.id)) el.classList.add('playable');
     });
   }
+}
+
+// ── Combinable highlight (lead turn / exchange) ──
+function updateCombinableHighlight() {
+  document.querySelectorAll('#my-hand .card.combinable').forEach(el => el.classList.remove('combinable'));
+
+  if (selectedIds.size === 0) return;
+
+  // Only active on lead turn (no current winning combo to beat)
+  const r = currentGs?.currentRound;
+  if (r?.currentTrick?.winningCombo) return;
+
+  const validMoves = getValidMoves(myHand, null, r?.wishRank || null);
+  // Keep only combos that contain every selected card
+  const matchingCombos = validMoves.filter(combo =>
+    [...selectedIds].every(id => combo.cards.some(c => c.id === id))
+  );
+
+  const combinableIds = new Set();
+  for (const combo of matchingCombos) {
+    for (const c of combo.cards) {
+      if (!selectedIds.has(c.id)) combinableIds.add(c.id);
+    }
+  }
+
+  document.querySelectorAll('#my-hand .card').forEach(el => {
+    if (combinableIds.has(el.dataset.id)) el.classList.add('combinable');
+  });
+}
+
+// ── Show received cards after exchange ──
+function showReceivedCards(r) {
+  if (!r.exchangeCards) return;
+  const myP = players.find(p => p.id === myPlayerId);
+  if (!myP) return;
+  const seat = myP.seat;
+
+  // Direction rules from exchange.js:
+  // Sender at (seat+3)%4 sent their 'left' card to me (seat)
+  // Sender at (seat+2)%4 sent their 'across' card to me (seat)
+  // Sender at (seat+1)%4 sent their 'right' card to me (seat)
+  const sources = [
+    { relSeat: (seat + 3) % 4, key: 'left',  label: '왼쪽' },
+    { relSeat: (seat + 2) % 4, key: 'across', label: '파트너' },
+    { relSeat: (seat + 1) % 4, key: 'right',  label: '오른쪽' },
+  ];
+
+  const received = sources.map(({ relSeat, key, label }) => {
+    const sender = players.find(p => p.seat === relSeat);
+    if (!sender) return null;
+    const card = r.exchangeCards[sender.id]?.[key];
+    if (!card) return null;
+    return { card, senderName: sender.name, label };
+  }).filter(Boolean);
+
+  if (received.length === 0) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'received-cards-overlay';
+
+  const box = document.createElement('div');
+  box.className = 'received-cards-box';
+
+  const title = document.createElement('div');
+  title.className = 'received-title';
+  title.textContent = '받은 카드 🎁';
+  box.appendChild(title);
+
+  const list = document.createElement('div');
+  list.className = 'received-list';
+  for (const { card, senderName, label } of received) {
+    const item = document.createElement('div');
+    item.className = 'received-item';
+    const from = document.createElement('div');
+    from.className = 'received-from';
+    from.textContent = `${label} · ${escHtml(senderName)}`;
+    item.appendChild(from);
+    item.appendChild(createCardEl(card));
+    list.appendChild(item);
+  }
+  box.appendChild(list);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+
+  setTimeout(() => overlay.remove(), 3500);
 }
 
 // ── Utils ──
