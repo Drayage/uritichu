@@ -720,6 +720,11 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   z-index: 2;
 }
 
+/* ── Speed button ── */
+#btn-speed { border-color: rgba(125,212,191,0.5); color: var(--mint-dark); }
+#btn-speed.active { background: var(--mint); border-color: var(--mint-dark); color: white; }
+#btn-speed:hover { background: rgba(125,212,191,0.15); }
+
 /* ── Surrender button ── */
 .btn-surrender {
   border-color: rgba(255,100,100,0.35);
