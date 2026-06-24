@@ -63,11 +63,15 @@
 
     <!-- Hand area (my cards) -->
     <div id="hand-area">
-      <div style="display:flex; align-items:center; justify-content:space-between;">
+      <div class="hand-top-row">
         <div class="hand-label">내 패 <span id="my-hand-count" style="color:var(--lavender-dark);">0</span>장</div>
-        <div style="display:flex; align-items:center; gap:6px;">
-          <div class="player-avatar" id="avatar-me" style="width:36px; height:36px; font-size:18px;">🙂</div>
-          <span id="name-me" style="font-weight:700; font-size:13px; color:var(--text);">나</span>
+        <div id="hand-sort-bar" style="display:flex;gap:4px;">
+          <button class="sort-btn active" data-sort="rank" onclick="window._setSortMode('rank')">숫자순</button>
+          <button class="sort-btn"        data-sort="suit" onclick="window._setSortMode('suit')">모양순</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:5px;">
+          <div class="player-avatar" id="avatar-me" style="width:34px; height:34px; font-size:16px;">🙂</div>
+          <span id="name-me" style="font-weight:700; font-size:12px; color:var(--text);">나</span>
           <div id="tichu-badge-me"></div>
         </div>
       </div>
@@ -106,7 +110,8 @@
       <div style="font-size:40px; margin-bottom:8px;">👑</div>
       <h2>라지 티츄!</h2>
       <p>처음 8장을 보고 콜할지 결정하세요.<br><b style="color:#c8900a;">성공: +200점 / 실패: -200점</b></p>
-      <div id="grand-tichu-hand" style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin:16px 0;"></div>
+      <div id="grand-tichu-sort" class="sort-bar" style="justify-content:center; margin:8px 0 0;"></div>
+      <div id="grand-tichu-hand" class="modal-hand" style="justify-content:center;"></div>
       <div class="timer-bar"><div class="timer-fill" id="grand-tichu-timer" style="width:100%;"></div></div>
       <div style="display:flex; gap:10px; margin-top:16px;">
         <button class="btn btn-danger btn-full" id="btn-grand-tichu-yes">👑 라지 티츄!</button>
@@ -122,7 +127,13 @@
       <h2>카드 교환</h2>
       <p>각 플레이어에게 1장씩 나눠주세요</p>
       <div class="exchange-slots" id="exchange-slots"></div>
-      <div id="exchange-hand" style="display:flex; gap:4px; justify-content:center; flex-wrap:wrap; margin:12px 0; max-height:120px; overflow-y:auto;"></div>
+      <div style="display:flex;justify-content:center;margin:6px 0 2px;">
+        <div class="sort-bar">
+          <button class="sort-btn active" data-sort="rank" onclick="window._setSortMode('rank')">숫자순</button>
+          <button class="sort-btn"        data-sort="suit" onclick="window._setSortMode('suit')">모양순</button>
+        </div>
+      </div>
+      <div id="exchange-hand" class="modal-hand"></div>
       <div id="exchange-status" style="font-size:13px; color:var(--text-light); margin-bottom:12px;"></div>
       <button class="btn btn-primary btn-full" id="btn-exchange-confirm" disabled>✅ 교환 완료</button>
     </div>
