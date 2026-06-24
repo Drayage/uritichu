@@ -402,11 +402,12 @@ function renderTrick(trick) {
   who.textContent = getPlayerName(trick.winnerId);
   area.appendChild(who);
 
-  // Cards (animated entrance)
+  // Cards (animated entrance) — sorted by rank ascending
   const lastPlay = trick.plays[trick.plays.length - 1];
+  const sortedCards = [...lastPlay.combination.cards].sort((a, b) => a.numericValue - b.numericValue);
   const div = document.createElement('div');
   div.className = 'trick-play anim';
-  for (const card of lastPlay.combination.cards) div.appendChild(createCardEl(card));
+  for (const card of sortedCards) div.appendChild(createCardEl(card));
   area.appendChild(div);
 
   // Combo label (bottom)
