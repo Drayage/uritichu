@@ -746,6 +746,23 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 .finish-toast  { background: linear-gradient(135deg,#fffbe6,#fff0c8); color: #a07000; border-color: rgba(255,180,0,0.55); font-size: 16px; top: 38%; }
 .dragon-give-toast { background: linear-gradient(135deg,#fff8e0,#ffd780); color: #9a6800; border-color: rgba(255,183,0,0.7); }
 
+@keyframes tichuSuccess {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(6px) scale(0.85); }
+  12%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.08); }
+  25%  { transform: translateX(-50%) translateY(0) scale(1); }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(-12px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-28px) scale(0.92); }
+}
+.tichu-success-toast {
+  background: linear-gradient(135deg, #fffbe0, #ffd060);
+  color: #8a5e00;
+  border: 2.5px solid rgba(255,195,0,0.85);
+  font-size: 19px;
+  top: 28%;
+  box-shadow: 0 6px 24px rgba(200,150,0,0.3);
+  animation: tichuSuccess 3.2s ease-out forwards;
+}
+
 /* ── Round-over modal result table ── */
 .result-header {
   font-size: 11px;
@@ -780,6 +797,22 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   color: var(--text-light);
   text-align: center;
 }
+
+/* ── Round delta display ── */
+.round-delta {
+  margin: 10px 0 4px;
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(178,240,224,0.25), rgba(201,184,245,0.25));
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--text);
+}
+.round-delta-val { font-size: 15px; font-weight: 800; }
+.round-delta-sep { color: var(--text-light); margin: 0 6px; font-size: 11px; }
+.team-a-text { color: #2a8c6a; }
+.team-b-text { color: var(--lavender-dark); }
 
 /* ── My turn glow ── */
 @keyframes myTurnGlow {

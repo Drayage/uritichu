@@ -204,13 +204,15 @@ function advanceTurn(gameState, currentPlayerId, skipCurrent = false) {
   const players = gameState.players;
   const seats = players.map(p => p.seat).sort((a, b) => a - b);
   const currentP = players.find(p => p.id === currentPlayerId);
+  if (!currentP) return endRound(gameState);
   let seatIdx = seats.indexOf(currentP.seat);
   for (let attempts = 0; attempts < 4; attempts++) {
     seatIdx = (seatIdx + 1) % 4;
     const next = players.find(p => p.seat === seats[seatIdx]);
     if (next && !r.finishOrder.includes(next.id)) { r.activePlayerId = next.id; return { ok: true }; }
   }
-  return { ok: true };
+  // No non-finished player found — all remaining players are done
+  return endRound(gameState);
 }
 
 function endRound(gameState) {
@@ -225,6 +227,7 @@ function endRound(gameState) {
     hands: { [lastPlayer]: r.lastPlayerHand },
     grandTichuCalls: r.grandTichuCalls, tichuCalls: r.tichuCalls,
   }, gameState.players);
+  r.scoreDeltas = deltas;
   gameState.totalScores.team0 += deltas.team0;
   gameState.totalScores.team1 += deltas.team1;
   gameState.rounds.push(r);

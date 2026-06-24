@@ -77,6 +77,8 @@ export async function onRoomStateChange(roomData, myId) {
 
   // Play phase
   if (r.phase === PHASE.PLAY && r.activePlayerId) {
+    // Guard: skip if active player already finished (shouldn't happen but prevents infinite loops)
+    if (r.finishOrder.includes(r.activePlayerId)) return;
     const active = gs.players.find(p => p.id === r.activePlayerId);
     if (active?.isAI) {
       _armWatchdog(active.id, gs);
