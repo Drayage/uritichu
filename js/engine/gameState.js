@@ -94,6 +94,21 @@ function playCards(gameState, playerId, combination, wishRank) {
   const cardIds = new Set(combination.cards.map(c => c.id));
   r.hands[playerId] = r.hands[playerId].filter(c => !cardIds.has(c.id));
   r.tichuPlayed[playerId] = true;
+
+  // ── Finish tracking: always here, before any special-card early returns ──
+  if (r.hands[playerId].length === 0 && !r.finishOrder.includes(playerId)) {
+    r.finishOrder.push(playerId);
+    if (r.finishOrder.length === 2) {
+      const fp1 = gameState.players.find(p => p.id === r.finishOrder[0]);
+      const fp2 = gameState.players.find(p => p.id === r.finishOrder[1]);
+      if (fp1 && fp2 && fp1.teamIndex === fp2.teamIndex) {
+        if (r.currentTrick) { r.pastTricks.push(r.currentTrick); r.currentTrick = null; }
+        r.passCount = 0;
+        return endRound(gameState);
+      }
+    }
+  }
+
   if (combination.cards.length === 1 && combination.cards[0].rank === 'dog') return handleDog(gameState, playerId);
   if (combination.cards.some(c => c.rank === 'mahjong') && wishRank) r.wishRank = wishRank;
   if (r.wishRank && combination.cards.some(c => c.rank === r.wishRank || String(c.numericValue) === String(r.wishRank))) r.wishRank = null;
@@ -109,18 +124,6 @@ function playCards(gameState, playerId, combination, wishRank) {
   r.currentTrick.winnerId = playerId;
   r.currentTrick.winningCombo = adjustedCombo;
   r.passCount = 0;
-  if (r.hands[playerId].length === 0) {
-    r.finishOrder.push(playerId);
-    if (r.finishOrder.length === 2) {
-      const p1 = gameState.players.find(p => p.id === r.finishOrder[0]);
-      const p2 = gameState.players.find(p => p.id === r.finishOrder[1]);
-      if (p1 && p2 && p1.teamIndex === p2.teamIndex) {
-        if (r.currentTrick) { r.pastTricks.push(r.currentTrick); r.currentTrick = null; }
-        r.passCount = 0;
-        return endRound(gameState);
-      }
-    }
-  }
   if (combination.cards.some(c => c.rank === 'dragon') && r.finishOrder.length < 3) {
     r.dragonGivePending = true;
     r.dragonGiveWinner = playerId;
