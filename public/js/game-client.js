@@ -263,10 +263,12 @@ function createCardEl(card, clickable = false) {
   el.dataset.id = card.id;
   if (card.isSpecial) {
     el.classList.add('special', `special-${card.rank}`);
-    el.innerHTML = `<div class="card-rank-top">${RANK_DISPLAY[card.rank]||card.rank}</div><div class="card-suit" style="font-size:32px;">${RANK_DISPLAY[card.rank]||''}</div><div class="card-rank-bot">${RANK_DISPLAY[card.rank]||card.rank}</div>`;
+    const sym = RANK_DISPLAY[card.rank] || card.rank;
+    el.innerHTML = `<div class="card-rank-top">${sym}</div><div class="card-suit">${sym}</div><div class="card-rank-bot">${sym}</div>`;
   } else {
     el.classList.add(`suit-${card.suit}`);
-    el.innerHTML = `<div class="card-rank-top">${card.rank}<br><span style="font-size:10px;">${SUIT_ICON[card.suit]}</span></div><div class="card-suit">${SUIT_ICON[card.suit]}</div><div class="card-rank-bot">${card.rank}<br><span style="font-size:10px;">${SUIT_ICON[card.suit]}</span></div>`;
+    const icon = SUIT_ICON[card.suit];
+    el.innerHTML = `<div class="card-rank-top">${card.rank}</div><div class="card-suit">${icon}</div><div class="card-rank-bot">${card.rank}</div>`;
   }
   return el;
 }
@@ -354,24 +356,24 @@ function renderTrick(trick) {
   area.innerHTML = '';
   if (!trick || !trick.plays || trick.plays.length === 0) return;
 
-  // Show only the latest (winning) play
-  const lastPlay = trick.plays[trick.plays.length - 1];
-  const div = document.createElement('div');
-  div.className = 'trick-play';
-  for (const card of lastPlay.combination.cards) div.appendChild(createCardEl(card));
-  area.appendChild(div);
-
-  // Combo label
-  const label = document.createElement('div');
-  label.className = 'trick-combo-label';
-  label.textContent = comboLabel(trick.winningCombo);
-  area.appendChild(label);
-
-  // Who played it
+  // Who played (top)
   const who = document.createElement('div');
   who.className = 'trick-who';
   who.textContent = getPlayerName(trick.winnerId);
   area.appendChild(who);
+
+  // Cards (animated entrance)
+  const lastPlay = trick.plays[trick.plays.length - 1];
+  const div = document.createElement('div');
+  div.className = 'trick-play anim';
+  for (const card of lastPlay.combination.cards) div.appendChild(createCardEl(card));
+  area.appendChild(div);
+
+  // Combo label (bottom)
+  const label = document.createElement('div');
+  label.className = 'trick-combo-label';
+  label.textContent = comboLabel(trick.winningCombo);
+  area.appendChild(label);
 }
 
 // ── Player Zones ──
@@ -471,6 +473,7 @@ function updateScores(scores) {
 function enableActions(isMyTurn, currentTrick) {
   document.getElementById('btn-play').disabled = !isMyTurn;
   document.getElementById('btn-pass').disabled = !isMyTurn || !currentTrick;
+  document.getElementById('hand-area').classList.toggle('my-turn', isMyTurn);
   updateBombButton(currentTrick);
 }
 
@@ -478,6 +481,7 @@ function disableActions() {
   document.getElementById('btn-play').disabled = true;
   document.getElementById('btn-pass').disabled = true;
   document.getElementById('btn-bomb').style.display = 'none';
+  document.getElementById('hand-area').classList.remove('my-turn');
 }
 
 function updateBombButton(currentTrick) {
