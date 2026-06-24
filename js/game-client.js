@@ -23,7 +23,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   isHost = sessionStorage.getItem('isHost') === 'true';
   const autoStart = sessionStorage.getItem('autoStart') === 'true';
 
-  if (!myPlayerId || !myRoomId) { window.location.href = '/'; return; }
+  if (!myPlayerId || !myRoomId) { window.location.href = './index.html'; return; }
 
   sessionStorage.removeItem('autoStart');
   setupButtonListeners();
