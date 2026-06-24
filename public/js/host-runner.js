@@ -6,7 +6,10 @@ let _running = false;
 let _roomId = null;
 let _hostId = null;
 let _watchdogTimer = null;
-let _watchdogForId = null;   // tracks which AI player we're watching
+let _watchdogForId = null;
+// If a state change arrives while _running, store it and replay after completion
+let _pendingRoomData = null;
+let _pendingMyId = null;
 
 export function initHostRunner(roomId, hostId) {
   _roomId = roomId;
@@ -15,7 +18,11 @@ export function initHostRunner(roomId, hostId) {
 
 export async function onRoomStateChange(roomData, myId) {
   if (roomData.hostId !== myId) return;
-  if (_running) return;
+  if (_running) {
+    _pendingRoomData = roomData;
+    _pendingMyId = myId;
+    return;
+  }
   const gs = roomData.gameState;
   if (!gs || !gs.currentRound) return;
   const r = gs.currentRound;
@@ -114,6 +121,14 @@ async function _runWithDelay(fn, delay = 900) {
     console.error('[HostRunner] error:', e);
   } finally {
     _running = false;
+    // Re-process any state change that arrived while we were busy
+    if (_pendingRoomData) {
+      const pending = _pendingRoomData;
+      const pendingId = _pendingMyId;
+      _pendingRoomData = null;
+      _pendingMyId = null;
+      setTimeout(() => onRoomStateChange(pending, pendingId), 0);
+    }
   }
 }
 

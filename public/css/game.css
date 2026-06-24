@@ -123,6 +123,19 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   max-width: 100%;
 }
 
+/* Card point value overlay */
+.card-pts {
+  position: absolute;
+  bottom: 2px;
+  right: 3px;
+  font-size: 7px;
+  font-weight: 900;
+  line-height: 1;
+  color: #c87000;
+  pointer-events: none;
+}
+.card-pts.neg { color: #c0392b; }
+
 .card.suit-jade .card-rank-top,
 .card.suit-jade .card-rank-bot { color: #2eb87a; }
 .card.suit-sword .card-rank-top,
@@ -250,6 +263,12 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 
 .player-avatar.active { border-color: var(--peach-dark); animation: pulse 1.2s ease-in-out infinite; }
+.trick-pts {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--mint-dark);
+  min-height: 14px;
+}
 .player-avatar.out { opacity: 0.4; }
 
 @keyframes pulse {
@@ -656,6 +675,45 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 .btn-surrender:hover { background: rgba(255,100,100,0.1); opacity: 1; }
 
+/* ── Playable card highlight ── */
+@keyframes playableGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(125,212,191,0.3); }
+  50%       { box-shadow: 0 0 0 5px rgba(125,212,191,0.55); }
+}
+.card.playable { border-color: var(--mint-dark); animation: playableGlow 1.1s ease-in-out infinite; }
+
+/* ── Pass button pulse (no valid play) ── */
+@keyframes pulseHint {
+  0%, 100% { box-shadow: 0 2px 10px var(--shadow); transform: scale(1); }
+  50%       { box-shadow: 0 0 0 6px rgba(125,212,191,0.4); transform: scale(1.05); }
+}
+#btn-pass.pulse-hint { animation: pulseHint 0.7s ease-in-out infinite; }
+
+/* ── Trick won toast ── */
+@keyframes trickWonFloat {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.9); }
+  15%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(-18px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-35px) scale(0.95); }
+}
+.trick-won-toast {
+  position: fixed;
+  left: 50%;
+  top: 40%;
+  font-size: 15px;
+  font-weight: 800;
+  background: rgba(255,255,255,0.96);
+  color: var(--lavender-dark);
+  border: 2px solid rgba(178,240,224,0.7);
+  padding: 6px 20px;
+  border-radius: 50px;
+  box-shadow: 0 4px 16px rgba(100,80,160,0.2);
+  animation: trickWonFloat 1.8s ease-out forwards;
+  pointer-events: none;
+  z-index: 900;
+  white-space: nowrap;
+}
+
 /* ── My turn glow ── */
 @keyframes myTurnGlow {
   0%,100% { border-top-color: rgba(201,184,245,0.3); }
@@ -788,8 +846,8 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   #trick-area { max-width: 170px; padding: 6px 8px; }
 
   /* Hand area: 2-row card layout, taller */
-  #hand-area { padding: 6px 8px 8px; min-height: 120px; max-height: 220px; gap: 5px; }
-  #my-hand { gap: 4px; max-height: 136px; overflow-y: hidden; }
+  #hand-area { padding: 6px 8px 8px; min-height: 120px; max-height: 275px; gap: 5px; }
+  #my-hand { gap: 4px; max-height: 140px; overflow-y: hidden; flex-shrink: 0; }
 
   /* Cards in hand: bigger + 2 rows */
   .card { width: 46px; height: 65px; padding: 3px 2px; }
