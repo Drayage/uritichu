@@ -21,7 +21,7 @@ function decideAction(gameState, playerId) {
   }
   if (r.phase === 'exchange') {
     if (!r.exchangeSubmitted[playerId]) {
-      return { action: 'exchange', data: { cards: decideExchange(hand, p.seat) } };
+      return { action: 'exchange', data: { cards: decideExchange(hand, p.seat, gameState, playerId) } };
     }
   }
   if (r.phase === 'play') {
