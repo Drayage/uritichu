@@ -591,6 +591,46 @@ body { overflow: hidden; height: 100vh; }
   border-radius: 50px;
 }
 
+/* ── Bomb button ── */
+.btn-bomb {
+  background: linear-gradient(135deg, #ff8c00, #e65c00);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btn-bomb:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-bomb:active { transform: translateY(0); }
+
+/* ── Bomb modal list ── */
+.bomb-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.bomb-row:last-child { border-bottom: none; }
+.bomb-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #e65c00;
+  min-width: 70px;
+}
+.bomb-cards {
+  display: flex;
+  gap: 4px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  flex: 1;
+}
+.bomb-cards .card { pointer-events: none; }
+
 /* ── Responsive ── */
 @media (max-width: 640px) {
   #game-root {

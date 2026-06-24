@@ -80,6 +80,7 @@
       <div class="hand-actions">
         <button class="btn btn-primary" id="btn-play" disabled>▶ 내기</button>
         <button class="btn btn-secondary" id="btn-pass" disabled>패스</button>
+        <button class="btn btn-bomb" id="btn-bomb" style="display:none;" onclick="window._showBombModal()">💣 폭탄</button>
         <span id="selected-info" style="font-size:12px; color:var(--text-light); white-space:nowrap;"></span>
       </div>
       <div id="combo-hint" class="combo-hint"></div>
@@ -231,6 +232,18 @@
         <div class="rules-combo-row"><span class="rules-combo-tag pts">티츄 ±100</span>선언 후 1등 하면 +100, 실패 시 -100</div>
         <div class="rules-combo-row"><span class="rules-combo-tag pts">라지티츄 ±200</span>8장 보고 선언. 1등 하면 +200, 실패 시 -200</div>
         <div class="rules-combo-row"><span class="rules-combo-tag pts">원-투 +200</span>같은 팀 1·2등 시 자동 +200점</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bomb Modal -->
+  <div class="modal-overlay" id="modal-bomb" style="display:none;">
+    <div class="modal-card" style="max-width:480px;">
+      <h3 style="margin:0 0 12px;">💣 폭탄 선택</h3>
+      <p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">현재 트릭을 이길 수 있는 폭탄만 표시돼요.</p>
+      <div id="bomb-list"></div>
+      <div style="margin-top:16px;text-align:right;">
+        <button class="btn btn-secondary" onclick="window._hideModal('modal-bomb')">취소</button>
       </div>
     </div>
   </div>

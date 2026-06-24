@@ -1,7 +1,7 @@
 import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
-import { detectCombination, canBeat } from './engine/combinations.js';
+import { detectCombination, canBeat, getBombs } from './engine/combinations.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -227,6 +227,8 @@ function setSortMode(mode) {
   if (exchangePhase) renderExchangeHand();
 }
 window._setSortMode = setSortMode;
+window._showBombModal = showBombModal;
+window._hideModal = hideModal;
 
 function renderSortBar(target) {
   const bar = document.createElement('div');
@@ -469,11 +471,73 @@ function updateScores(scores) {
 function enableActions(isMyTurn, currentTrick) {
   document.getElementById('btn-play').disabled = !isMyTurn;
   document.getElementById('btn-pass').disabled = !isMyTurn || !currentTrick;
+  updateBombButton(currentTrick);
 }
 
 function disableActions() {
   document.getElementById('btn-play').disabled = true;
   document.getElementById('btn-pass').disabled = true;
+  document.getElementById('btn-bomb').style.display = 'none';
+}
+
+function updateBombButton(currentTrick) {
+  const btn = document.getElementById('btn-bomb');
+  const me = (currentGs?.players || players).find(p => p.id === myPlayerId);
+  if (me?.isAI) { btn.style.display = 'none'; return; }
+  const myBombs = getBombs(myHand);
+  if (myBombs.length === 0) { btn.style.display = 'none'; return; }
+
+  const r = currentGs?.currentRound;
+  const isMyTurn = r?.activePlayerId === myPlayerId;
+  const hasActiveTrick = !!currentTrick?.winningCombo;
+
+  // Show bomb button when: there's an active trick bomb can beat (out-of-turn OK),
+  // OR it's my turn and I'm the lead (I can start with a bomb)
+  if (!hasActiveTrick && !isMyTurn) { btn.style.display = 'none'; return; }
+  const currentCombo = currentTrick?.winningCombo || null;
+  const canThrow = myBombs.some(b => canBeat(b, currentCombo));
+  btn.style.display = canThrow ? '' : 'none';
+}
+
+function showBombModal() {
+  const list = document.getElementById('bomb-list');
+  list.innerHTML = '';
+  const currentCombo = currentGs?.currentRound?.currentTrick?.winningCombo || null;
+  const bombs = getBombs(myHand).filter(b => canBeat(b, currentCombo));
+
+  for (const bomb of bombs) {
+    const row = document.createElement('div');
+    row.className = 'bomb-row';
+
+    const label = document.createElement('div');
+    label.className = 'bomb-label';
+    label.textContent = comboLabel(bomb);
+
+    const cards = document.createElement('div');
+    cards.className = 'bomb-cards';
+    for (const card of bomb.cards) cards.appendChild(createCardEl(card));
+
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-danger';
+    btn.style.cssText = 'padding:8px 18px; font-size:13px; flex-shrink:0;';
+    btn.textContent = '던지기 💣';
+    btn.addEventListener('click', async () => {
+      hideModal('modal-bomb');
+      if (!currentGs) return;
+      const gs = JSON.parse(JSON.stringify(currentGs));
+      const result = playCards(gs, myPlayerId, bomb, null);
+      if (result.error) { setStatus(`⚠️ ${result.error}`); return; }
+      selectedIds.clear();
+      await saveGameState(myRoomId, gs);
+    });
+
+    row.appendChild(label);
+    row.appendChild(cards);
+    row.appendChild(btn);
+    list.appendChild(row);
+  }
+
+  showModal('modal-bomb');
 }
 
 // ── Modals ──

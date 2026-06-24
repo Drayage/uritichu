@@ -212,12 +212,14 @@ function getBombs(hand) {
     if (!groups.has(c.numericValue)) groups.set(c.numericValue, []);
     groups.get(c.numericValue).push(c);
   }
+  // Quad bombs
   for (const [, cards] of groups) {
     if (cards.length === 4) { const combo = detectCombination(cards); if (combo) bombs.push(combo); }
-    for (const suit of ['jade','sword','pagoda','star']) {
-      const sc = hand.filter(c => c.suit === suit && !c.isSpecial);
-      if (sc.length >= 5) bombs.push(...findStraightFlushBombs(sc));
-    }
+  }
+  // Straight flush bombs (outside the groups loop to avoid duplicate scanning)
+  for (const suit of ['jade','sword','pagoda','star']) {
+    const sc = hand.filter(c => c.suit === suit && !c.isSpecial);
+    if (sc.length >= 5) bombs.push(...findStraightFlushBombs(sc));
   }
   const seen = new Set();
   return bombs.filter(b => {
