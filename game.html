@@ -17,7 +17,8 @@
       <div id="status-bar">대기 중...</div>
       <div style="display:flex; align-items:center; gap:10px;">
         <div id="wish-indicator">⭐ 소원: <span id="wish-rank-text"></span></div>
-        <button class="btn btn-secondary" id="btn-tichu" style="display:none; font-size:13px; padding:8px 16px;">티츄!</button>
+        <button class="btn btn-secondary" id="btn-tichu" style="display:none; font-size:13px; padding:8px 14px;">티츄!</button>
+        <button class="btn btn-ghost" id="btn-rules" style="font-size:13px; padding:6px 12px;" onclick="document.getElementById('modal-rules').style.display='flex'">❓ 룰</button>
       </div>
     </div>
 
@@ -79,8 +80,9 @@
       <div class="hand-actions">
         <button class="btn btn-primary" id="btn-play" disabled>▶ 내기</button>
         <button class="btn btn-secondary" id="btn-pass" disabled>패스</button>
-        <span id="selected-info" style="font-size:13px; color:var(--text-light); margin-left:8px;"></span>
+        <span id="selected-info" style="font-size:12px; color:var(--text-light); white-space:nowrap;"></span>
       </div>
+      <div id="combo-hint" class="combo-hint"></div>
     </div>
 
     <!-- Sidebar -->
@@ -177,6 +179,59 @@
       <h2 id="game-over-title">게임 종료!</h2>
       <div id="game-over-scores" style="margin:16px 0;"></div>
       <button class="btn btn-primary btn-full" onclick="location.href='./index.html'">🏠 로비로 돌아가기</button>
+    </div>
+  </div>
+
+  <!-- Rules -->
+  <div class="modal-overlay" id="modal-rules" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" style="max-width:480px; text-align:left;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h2 style="margin:0;">📖 룰 &amp; 특수카드</h2>
+        <button class="btn btn-ghost" style="font-size:18px;padding:4px 10px;" onclick="document.getElementById('modal-rules').style.display='none'">✕</button>
+      </div>
+
+      <h3 class="rules-section">특수카드</h3>
+      <div class="rules-card-list">
+        <div class="rules-card-item">
+          <span class="rules-card-icon special-mahjong-bg">🐦</span>
+          <div><b>참새 (마작)</b> — 선공권 획득. 내면서 상대가 반드시 내야 할 <b>숫자를 소원</b>으로 빌 수 있어요.</div>
+        </div>
+        <div class="rules-card-item">
+          <span class="rules-card-icon special-dog-bg">🐶</span>
+          <div><b>개</b> — <b>파트너에게 선공권</b>을 넘겨줘요. 단독으로만 낼 수 있어요.</div>
+        </div>
+        <div class="rules-card-item">
+          <span class="rules-card-icon special-phoenix-bg">🦚</span>
+          <div><b>불사조</b> — 어떤 패에나 끼워 쓸 수 있는 <b>조커</b>. 단장으로 낼 땐 현재 패보다 0.5 높아요. 폭탄에는 사용 불가.</div>
+        </div>
+        <div class="rules-card-item">
+          <span class="rules-card-icon special-dragon-bg">🐉</span>
+          <div><b>용 (드래곤)</b> — 가장 강한 단장. 이기면 <b>그 트릭 전체를 상대팀에 양도</b>해야 해요.</div>
+        </div>
+      </div>
+
+      <h3 class="rules-section">족보 (낮은 순)</h3>
+      <div class="rules-combo-list">
+        <div class="rules-combo-row"><span class="rules-combo-tag">단장</span>카드 1장. 숫자가 높을수록 강해요.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">페어</span>같은 숫자 2장.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">트리플</span>같은 숫자 3장.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">풀하우스</span>트리플 + 페어 조합 5장. 트리플의 숫자로 강도 결정.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">스트레이트</span>연속된 숫자 5장 이상.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">연속페어</span>연속된 숫자의 페어 4장 이상 (예: 5·5·6·6).</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 포카드</span>같은 숫자 4장. 폭탄 — 어떤 패도 이겨요!</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 스티플</span>같은 무늬 5장 이상 연속. 더 긴 스티플이 더 강해요.</div>
+      </div>
+
+      <h3 class="rules-section">점수</h3>
+      <div class="rules-combo-list">
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">5점</span>5 카드 (각 무늬 4장)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">10점</span>10, K 카드</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">+25점</span>용 🐉 트릭 승리 시</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag neg">-25점</span>불사조 🦚 (패를 가져간 팀이 잃어요)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">티츄 ±100</span>선언 후 1등 하면 +100, 실패 시 -100</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">라지티츄 ±200</span>8장 보고 선언. 1등 하면 +200, 실패 시 -200</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">원-투 +200</span>같은 팀 1·2등 시 자동 +200점</div>
+      </div>
     </div>
   </div>
 

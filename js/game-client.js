@@ -1,7 +1,7 @@
 import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
-import { detectCombination } from './engine/combinations.js';
+import { detectCombination, canBeat } from './engine/combinations.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -276,6 +276,13 @@ function createCardBack() {
   return el;
 }
 
+const SPECIAL_INFO = {
+  mahjong: { name: '참새 🐦', desc: '선공권 획득. 내면서 상대가 반드시 내야 할 숫자를 소원으로 빌 수 있어요.' },
+  dog:     { name: '개 🐶',   desc: '파트너에게 선공권을 넘겨줘요. 단독으로만 낼 수 있어요.' },
+  phoenix: { name: '불사조 🦚', desc: '어떤 패에나 끼워 쓸 수 있는 조커. 단장으로 낼 땐 현재 패보다 0.5 높게, 폭탄에는 사용 불가.' },
+  dragon:  { name: '용 🐉',   desc: '가장 강한 단장(15). 이긴 트릭 전체를 상대팀 중 원하는 상대에게 줘야 해요.' },
+};
+
 function toggleSelect(card, el) {
   if (exchangePhase) { handleExchangeSelect(card); return; }
   if (selectedIds.has(card.id)) { selectedIds.delete(card.id); el.classList.remove('selected'); }
@@ -283,21 +290,86 @@ function toggleSelect(card, el) {
   updateSelectedInfo();
 }
 
+function comboLabel(combo) {
+  if (!combo) return '';
+  const rv = { '-1': '불사조', 0: '개', 1: '참새', 16: '용' };
+  const r = rv[combo.rank] ?? combo.rank;
+  return ({
+    single: `단장 ${r}`,
+    pair: `페어 ${r}`,
+    triple: `트리플 ${r}`,
+    steps: `연속페어 ${combo.length}장`,
+    fullhouse: `풀하우스 (${r} 트리플)`,
+    straight: `스트레이트 ${combo.length}장`,
+    bomb_quad: `💣 포카드 ${r}`,
+    bomb_sf: `💣 스티플 ${combo.length}장`,
+  })[combo.type] || combo.type;
+}
+
 function updateSelectedInfo() {
+  const el = document.getElementById('selected-info');
+  const hint = document.getElementById('combo-hint');
   const count = selectedIds.size;
-  document.getElementById('selected-info').textContent = count > 0 ? `${count}장 선택됨` : '';
+
+  if (count === 0) { el.textContent = ''; if (hint) hint.innerHTML = ''; return; }
+
+  el.textContent = `${count}장 선택`;
+
+  if (!hint) return;
+
+  // Special card single-select info
+  if (count === 1) {
+    const card = myHand.find(c => selectedIds.has(c.id));
+    if (card?.isSpecial) {
+      const info = SPECIAL_INFO[card.rank];
+      if (info) { hint.innerHTML = `<span class="hint-name">${info.name}</span><span class="hint-desc">${info.desc}</span>`; return; }
+    }
+  }
+
+  const cards = myHand.filter(c => selectedIds.has(c.id));
+  const combo = detectCombination(cards);
+  if (!combo) { hint.innerHTML = '<span class="hint-invalid">❌ 낼 수 없는 패</span>'; return; }
+
+  const label = comboLabel(combo);
+  const r = currentGs?.currentRound;
+  const currentTrick = r?.currentTrick;
+  const currentCombo = currentTrick?.winningCombo;
+
+  if (!currentCombo) {
+    hint.innerHTML = `<span class="hint-valid">✅ ${label}</span>`;
+  } else {
+    const { canBeat } = window._engine || {};
+    // canBeat imported inline below
+    const ok = canBeat(combo, currentCombo);
+    hint.innerHTML = ok
+      ? `<span class="hint-valid">✅ ${label}</span>`
+      : `<span class="hint-invalid">❌ ${label} — 현재 패를 이길 수 없어요</span>`;
+  }
 }
 
 function renderTrick(trick) {
   const area = document.getElementById('trick-area');
   area.innerHTML = '';
   if (!trick || !trick.plays || trick.plays.length === 0) return;
-  for (const play of trick.plays) {
-    const div = document.createElement('div');
-    div.className = 'trick-play';
-    for (const card of play.combination.cards) div.appendChild(createCardEl(card));
-    area.appendChild(div);
-  }
+
+  // Show only the latest (winning) play
+  const lastPlay = trick.plays[trick.plays.length - 1];
+  const div = document.createElement('div');
+  div.className = 'trick-play';
+  for (const card of lastPlay.combination.cards) div.appendChild(createCardEl(card));
+  area.appendChild(div);
+
+  // Combo label
+  const label = document.createElement('div');
+  label.className = 'trick-combo-label';
+  label.textContent = comboLabel(trick.winningCombo);
+  area.appendChild(label);
+
+  // Who played it
+  const who = document.createElement('div');
+  who.className = 'trick-who';
+  who.textContent = getPlayerName(trick.winnerId);
+  area.appendChild(who);
 }
 
 // ── Player Zones ──
