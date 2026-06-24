@@ -57,6 +57,9 @@ window.addEventListener('DOMContentLoaded', async () => {
     const me = players.find(p => p.id === myPlayerId);
     if (me) { mySeat = me.seat; myTeam = me.teamIndex; }
 
+    // Always refresh player zone display (handles page refresh mid-game)
+    if (mySeat !== undefined) setupPlayerZones();
+
     const r = gs.currentRound;
 
     // Detect phase transitions

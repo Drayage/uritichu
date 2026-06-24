@@ -194,3 +194,38 @@
 
 .team-dot.a { background: var(--mint-dark); }
 .team-dot.b { background: var(--lavender-dark); }
+
+/* Avatar picker */
+.avatar-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.avatar-opt {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 22px;
+  background: var(--cream);
+  border: 2px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.avatar-opt:hover {
+  background: var(--lavender);
+  transform: scale(1.1);
+}
+
+.avatar-opt.selected {
+  background: white;
+  border-color: var(--lavender-dark);
+  box-shadow: 0 2px 10px rgba(160,142,232,0.4);
+  transform: scale(1.12);
+}
