@@ -716,6 +716,24 @@ function updateExchangeConfirm() {
 }
 
 function showWishModal() {
+  // Current field context
+  const trickEl = document.getElementById('wish-trick-preview');
+  trickEl.innerHTML = '';
+  const trick = currentGs?.currentRound?.currentTrick;
+  if (trick?.plays?.length) {
+    const lastPlay = trick.plays[trick.plays.length - 1];
+    for (const card of lastPlay.combination.cards) trickEl.appendChild(createCardEl(card));
+  } else {
+    trickEl.innerHTML = '<span class="wish-empty">선공 (없음)</span>';
+  }
+
+  // Remaining hand after playing selected cards
+  const handEl = document.getElementById('wish-hand-preview');
+  handEl.innerHTML = '';
+  for (const card of sortHand(myHand.filter(c => !selectedIds.has(c.id)))) {
+    handEl.appendChild(createCardEl(card));
+  }
+
   const grid = document.getElementById('wish-rank-grid');
   grid.innerHTML = '';
   for (const r of ['2','3','4','5','6','7','8','9','10','J','Q','K','A']) {

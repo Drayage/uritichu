@@ -160,10 +160,20 @@
 
   <!-- Wish -->
   <div class="modal-overlay" id="modal-wish" style="display:none;">
-    <div class="modal">
-      <div style="font-size:40px; margin-bottom:8px;">⭐</div>
-      <h2>소원을 말해요!</h2>
-      <p>참새를 내고 숫자를 지정하면, 상대가 그 숫자를 내야 해요</p>
+    <div class="modal" style="max-width:460px;">
+      <div style="font-size:36px; margin-bottom:6px;">⭐</div>
+      <h2 style="margin-bottom:4px;">소원을 말해요!</h2>
+      <p style="margin-bottom:10px;">지정하면 다른 플레이어가 그 숫자를 반드시 내야 해요</p>
+      <div class="wish-context">
+        <div class="wish-ctx-block">
+          <div class="wish-ctx-label">현재 필드</div>
+          <div id="wish-trick-preview" class="wish-preview"></div>
+        </div>
+        <div class="wish-ctx-block">
+          <div class="wish-ctx-label">내 남은 패</div>
+          <div id="wish-hand-preview" class="wish-preview"></div>
+        </div>
+      </div>
       <div class="rank-grid" id="wish-rank-grid"></div>
       <button class="btn btn-secondary btn-full" id="btn-wish-none">소원 없음</button>
     </div>
