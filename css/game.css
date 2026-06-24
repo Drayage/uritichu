@@ -150,10 +150,10 @@ body { overflow: hidden; height: 100vh; }
 /* ── Hand area ── */
 #my-hand {
   display: flex;
-  gap: 3px;
-  overflow-x: auto;
+  gap: 4px;
   padding: 4px 0;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  overflow-y: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--lavender) transparent;
 }
@@ -606,6 +606,52 @@ body { overflow: hidden; height: 100vh; }
 .rules-combo-tag.pts  { background: rgba(178,240,224,0.4); color: #2a8c6a; }
 .rules-combo-tag.neg  { background: rgba(255,100,100,0.15); color: #c0392b; }
 
+/* ── Pass toast ── */
+@keyframes passFloat {
+  0%   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  70%  { opacity: 1; transform: translateX(-50%) translateY(-22px) scale(1.05); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(0.9); }
+}
+.pass-toast {
+  position: fixed;
+  font-size: 13px;
+  font-weight: 800;
+  background: rgba(255,255,255,0.94);
+  color: var(--text-light);
+  border: 1.5px solid rgba(201,184,245,0.45);
+  padding: 5px 16px;
+  border-radius: 50px;
+  box-shadow: 0 3px 12px rgba(100,80,160,0.18);
+  animation: passFloat 1.3s ease-out forwards;
+  pointer-events: none;
+  z-index: 900;
+  white-space: nowrap;
+}
+
+/* ── Play flash ── */
+@keyframes playFlash {
+  0%   { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+.play-flash {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(201,184,245,0.5);
+  animation: playFlash 0.55s ease-out forwards;
+  pointer-events: none;
+  z-index: 2;
+}
+.player-zone { position: relative; }
+
+/* ── Surrender button ── */
+.btn-surrender {
+  border-color: rgba(255,100,100,0.35);
+  color: #c0392b;
+  opacity: 0.75;
+}
+.btn-surrender:hover { background: rgba(255,100,100,0.1); opacity: 1; }
+
 /* ── My turn glow ── */
 @keyframes myTurnGlow {
   0%,100% { border-top-color: rgba(201,184,245,0.3); }
@@ -666,19 +712,21 @@ body { overflow: hidden; height: 100vh; }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  /* Root grid: single column */
+  /* Use dynamic viewport height (accounts for mobile browser chrome) */
+  body { height: 100dvh; overflow: hidden; }
   #game-root {
+    height: 100dvh;
     grid-template-columns: 1fr;
     grid-template-areas: "top-bar" "table" "hand";
     grid-template-rows: auto 1fr auto;
   }
   #sidebar { display: none; }
 
-  /* Top bar */
+  /* Top bar: compact */
   #top-bar { padding: 5px 8px; gap: 5px; flex-wrap: nowrap; }
   #status-bar { font-size: 11px; padding: 4px 8px; min-width: 70px; }
   #btn-tichu { font-size: 11px; padding: 5px 9px; }
-  #btn-rules { font-size: 11px; padding: 5px 9px; }
+  #btn-rules, .btn-surrender { font-size: 12px; padding: 5px 9px; }
   #wish-indicator { font-size: 11px; padding: 3px 8px; }
 
   /* Table fills available area */
@@ -690,7 +738,7 @@ body { overflow: hidden; height: 100vh; }
     grid-template-areas:
       "north north north"
       "west  .     east";
-    grid-template-columns: 66px 1fr 66px;
+    grid-template-columns: 64px 1fr 64px;
     grid-template-rows: auto 1fr;
     gap: 4px;
     padding: 6px;
@@ -699,7 +747,7 @@ body { overflow: hidden; height: 100vh; }
   /* Player zones: remove absolute positioning */
   .player-zone { position: static !important; transform: none !important; }
 
-  /* North: horizontal strip */
+  /* North: horizontal strip at top */
   .player-zone.north {
     grid-area: north;
     flex-direction: row;
@@ -725,43 +773,49 @@ body { overflow: hidden; height: 100vh; }
     -webkit-overflow-scrolling: touch;
   }
 
-  /* West / East: vertical column */
+  /* West / East: vertical stack on sides */
   .player-zone.west { grid-area: west; align-items: center; justify-content: center; }
   .player-zone.east { grid-area: east; align-items: center; justify-content: center; }
   .player-zone.west .opponent-cards,
   .player-zone.east .opponent-cards { flex-direction: column; align-items: center; gap: 2px; }
 
-  /* Trick area: centered absolute, capped width */
-  #trick-area { max-width: 175px; padding: 6px 8px; }
+  /* Trick area: capped */
+  #trick-area { max-width: 170px; padding: 6px 8px; }
 
-  /* Hand area */
-  #hand-area { padding: 6px 8px 8px; min-height: 100px; max-height: 175px; gap: 5px; }
+  /* Hand area: 2-row card layout, taller */
+  #hand-area { padding: 6px 8px 8px; min-height: 120px; max-height: 220px; gap: 5px; }
+  #my-hand { gap: 4px; max-height: 136px; overflow-y: hidden; }
 
-  /* Cards in hand: slightly smaller */
-  .card { width: 42px; height: 60px; padding: 2px 2px; }
+  /* Cards in hand: bigger + 2 rows */
+  .card { width: 46px; height: 65px; padding: 3px 2px; }
   .card-rank-top, .card-rank-bot { font-size: 10px; }
-  .card-suit { font-size: 16px; }
-  .card.special .card-suit { font-size: 20px; }
-  .card:hover  { transform: translateY(-5px); }
-  .card.selected { transform: translateY(-11px); }
+  .card-suit { font-size: 18px; }
+  .card.special .card-suit { font-size: 22px; }
+  .card:hover  { transform: translateY(-4px); }
+  .card.selected { transform: translateY(-10px); }
 
   /* Card backs (opponents) */
-  .card-back { width: 32px; height: 46px; font-size: 13px; }
+  .card-back { width: 30px; height: 44px; font-size: 13px; }
 
   /* Avatars */
   .player-avatar { width: 30px; height: 30px; font-size: 14px; }
   .player-name { font-size: 9px; max-width: 52px; }
   .player-hand-count { font-size: 9px; }
 
-  /* Exchange modal */
+  /* Modals: compact on mobile */
   .modal { padding: 20px 16px; border-radius: 20px; }
   .exchange-slots { gap: 8px; }
-  .exchange-slot-box { width: 42px; height: 60px; }
+  .exchange-slot-box { width: 44px; height: 63px; }
+
+  /* Actions row: slightly smaller buttons */
+  .hand-actions { gap: 6px; }
+  .btn-bomb { padding: 6px 11px; font-size: 12px; }
 }
 
 @media (max-width: 380px) {
-  .card { width: 36px; height: 52px; }
-  .card-rank-top, .card-rank-bot { font-size: 8px; }
-  .card-suit { font-size: 13px; }
-  .card-back { width: 28px; height: 40px; font-size: 11px; }
+  .card { width: 40px; height: 57px; }
+  .card-rank-top, .card-rank-bot { font-size: 9px; }
+  .card-suit { font-size: 15px; }
+  .card-back { width: 26px; height: 38px; font-size: 11px; }
+  #my-hand { max-height: 122px; }
 }

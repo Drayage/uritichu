@@ -5,14 +5,14 @@ import { saveGameState } from './room-manager.js';
 let _running = false;
 let _roomId = null;
 let _hostId = null;
+let _watchdogTimer = null;
+let _watchdogForId = null;   // tracks which AI player we're watching
 
 export function initHostRunner(roomId, hostId) {
   _roomId = roomId;
   _hostId = hostId;
 }
 
-// Called by the game client whenever room state changes
-// Only the host executes this; others ignore
 export async function onRoomStateChange(roomData, myId) {
   if (roomData.hostId !== myId) return;
   if (_running) return;
@@ -21,7 +21,7 @@ export async function onRoomStateChange(roomData, myId) {
   const r = gs.currentRound;
   if (r.phase === PHASE.ROUND_OVER || r.phase === PHASE.GAME_OVER) return;
 
-  // Grand tichu phase: act for all AI that haven't decided
+  // Grand tichu phase
   if (r.phase === PHASE.DEAL_8 || r.phase === PHASE.GRAND_TICHU) {
     const pendingAI = gs.players.filter(p => p.isAI && (r.grandTichuCalls[p.id] === null || r.grandTichuCalls[p.id] === undefined));
     if (pendingAI.length > 0) {
@@ -29,7 +29,7 @@ export async function onRoomStateChange(roomData, myId) {
         const fresh = JSON.parse(JSON.stringify(gs));
         for (const p of pendingAI) {
           const action = decideAction(fresh, p.id);
-          if (action && action.action === 'grandTichu') setGrandTichu(fresh, p.id, action.data.call);
+          if (action?.action === 'grandTichu') setGrandTichu(fresh, p.id, action.data.call);
         }
         await saveGameState(_roomId, fresh);
       });
@@ -37,7 +37,7 @@ export async function onRoomStateChange(roomData, myId) {
     return;
   }
 
-  // Exchange phase: act for all AI that haven't submitted
+  // Exchange phase
   if (r.phase === PHASE.EXCHANGE) {
     const pendingAI = gs.players.filter(p => p.isAI && !r.exchangeSubmitted[p.id]);
     if (pendingAI.length > 0) {
@@ -45,7 +45,7 @@ export async function onRoomStateChange(roomData, myId) {
         const fresh = JSON.parse(JSON.stringify(gs));
         for (const p of pendingAI) {
           const action = decideAction(fresh, p.id);
-          if (action && action.action === 'exchange') submitExchange(fresh, p.id, action.data.cards);
+          if (action?.action === 'exchange') submitExchange(fresh, p.id, action.data.cards);
         }
         await saveGameState(_roomId, fresh);
       });
@@ -56,31 +56,50 @@ export async function onRoomStateChange(roomData, myId) {
   // Dragon give
   if (r.phase === PHASE.DRAGON_GIVE) {
     const winner = gs.players.find(p => p.id === r.dragonGiveWinner);
-    if (winner && winner.isAI) {
+    if (winner?.isAI) {
+      _clearWatchdog();
       await _runWithDelay(async () => {
         const fresh = JSON.parse(JSON.stringify(gs));
         const action = decideAction(fresh, winner.id);
-        if (action && action.action === 'dragonGive') giveDragonTrick(fresh, winner.id, action.data.targetId);
+        if (action?.action === 'dragonGive') giveDragonTrick(fresh, winner.id, action.data.targetId);
         await saveGameState(_roomId, fresh);
       });
     }
     return;
   }
 
-  // Play phase: act for active AI player
+  // Play phase
   if (r.phase === PHASE.PLAY && r.activePlayerId) {
     const active = gs.players.find(p => p.id === r.activePlayerId);
-    if (active && active.isAI) {
-      // Also check if AI needs to call tichu first
+    if (active?.isAI) {
+      _armWatchdog(active.id, gs);
       await _runWithDelay(async () => {
+        _clearWatchdog();
         const fresh = JSON.parse(JSON.stringify(gs));
-        const action = decideAction(fresh, active.id);
-        if (!action) return;
-        if (action.action === 'tichu') { callTichu(fresh, active.id); }
-        else if (action.action === 'play') { playCards(fresh, active.id, action.data.combination, action.data.wishRank || null); }
-        else if (action.action === 'pass') { pass(fresh, active.id); }
+        let action = decideAction(fresh, active.id);
+
+        // Tichu call: do it then immediately decide the actual play in same save
+        if (action?.action === 'tichu') {
+          callTichu(fresh, active.id);
+          action = decideAction(fresh, active.id);
+        }
+
+        if (!action || action.action === 'pass') {
+          // Fallback: pass
+          const result = pass(fresh, active.id);
+          if (result?.error) console.warn('[HostRunner] pass error:', result.error);
+        } else if (action.action === 'play') {
+          const result = playCards(fresh, active.id, action.data.combination, action.data.wishRank || null);
+          if (result?.error) {
+            console.warn('[HostRunner] play error, falling back to pass:', result.error);
+            pass(fresh, active.id);
+          }
+        }
+
         await saveGameState(_roomId, fresh);
       });
+    } else {
+      _clearWatchdog();
     }
   }
 }
@@ -89,10 +108,42 @@ async function _runWithDelay(fn, delay = 900) {
   if (_running) return;
   _running = true;
   await new Promise(r => setTimeout(r, delay));
-  try { await fn(); } finally { _running = false; }
+  try {
+    await fn();
+  } catch (e) {
+    console.error('[HostRunner] error:', e);
+  } finally {
+    _running = false;
+  }
 }
 
-// Host starts the next round
+function _armWatchdog(playerId, gs) {
+  if (_watchdogForId === playerId) return;  // already watching this player
+  _clearWatchdog();
+  _watchdogForId = playerId;
+  _watchdogTimer = setTimeout(async () => {
+    console.warn('[HostRunner] Watchdog: AI stuck for 10s, forcing pass for', playerId);
+    _running = false;
+    _watchdogForId = null;
+    _watchdogTimer = null;
+    try {
+      const fresh = JSON.parse(JSON.stringify(gs));
+      const r = fresh.currentRound;
+      if (r.activePlayerId === playerId) {
+        pass(fresh, playerId);
+        await saveGameState(_roomId, fresh);
+      }
+    } catch (e) {
+      console.error('[HostRunner] Watchdog save error:', e);
+    }
+  }, 10000);
+}
+
+function _clearWatchdog() {
+  if (_watchdogTimer) { clearTimeout(_watchdogTimer); _watchdogTimer = null; }
+  _watchdogForId = null;
+}
+
 export async function hostStartRound(gs) {
   const fresh = JSON.parse(JSON.stringify(gs));
   startRound(fresh);

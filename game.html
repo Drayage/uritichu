@@ -19,6 +19,7 @@
         <div id="wish-indicator">⭐ 소원: <span id="wish-rank-text"></span></div>
         <button class="btn btn-secondary" id="btn-tichu" style="display:none; font-size:13px; padding:8px 14px;">티츄!</button>
         <button class="btn btn-ghost" id="btn-rules" style="font-size:13px; padding:6px 12px;" onclick="document.getElementById('modal-rules').style.display='flex'">❓ 룰</button>
+        <button class="btn btn-ghost btn-surrender" style="font-size:13px; padding:6px 12px;" onclick="window._showSurrenderModal()">🏳️</button>
       </div>
     </div>
 
@@ -232,6 +233,19 @@
         <div class="rules-combo-row"><span class="rules-combo-tag pts">티츄 ±100</span>선언 후 1등 하면 +100, 실패 시 -100</div>
         <div class="rules-combo-row"><span class="rules-combo-tag pts">라지티츄 ±200</span>8장 보고 선언. 1등 하면 +200, 실패 시 -200</div>
         <div class="rules-combo-row"><span class="rules-combo-tag pts">원-투 +200</span>같은 팀 1·2등 시 자동 +200점</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Surrender Modal -->
+  <div class="modal-overlay" id="modal-surrender" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+    <div class="modal" style="max-width:340px;">
+      <div style="font-size:44px; margin-bottom:8px;">🏳️</div>
+      <h2>항복할까요?</h2>
+      <p>로비로 돌아갑니다. 진행 중인 게임에서 나가게 돼요.</p>
+      <div style="display:flex; gap:10px; margin-top:4px;">
+        <button class="btn btn-danger btn-full" onclick="location.href='./index.html'">나가기</button>
+        <button class="btn btn-secondary btn-full" onclick="document.getElementById('modal-surrender').style.display='none'">취소</button>
       </div>
     </div>
   </div>
