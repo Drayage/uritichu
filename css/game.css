@@ -488,18 +488,70 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 .exchange-slot-box.filled { border-style: solid; background: rgba(178,240,224,0.2); }
 .exchange-slot-label { font-size: 10px; color: var(--text-light); font-weight: 700; }
 
-/* Modal hand scrollable */
+/* Modal hand — wraps to 2 rows */
 .modal-hand {
   display: flex;
   gap: 3px;
   justify-content: flex-start;
-  flex-wrap: nowrap;
-  overflow-x: auto;
+  flex-wrap: wrap;
+  overflow-x: hidden;
   margin: 10px 0;
   padding: 4px 0 8px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--lavender) transparent;
-  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Wish modal context ── */
+.wish-context {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 12px;
+  align-items: flex-start;
+}
+
+.wish-ctx-block {
+  flex: 1;
+  min-width: 0;
+  background: rgba(201,184,245,0.1);
+  border: 1px solid rgba(201,184,245,0.3);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+
+.wish-ctx-label {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin-bottom: 6px;
+}
+
+.wish-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  min-height: 36px;
+  align-items: center;
+}
+
+/* Mini cards inside wish preview */
+.wish-preview .card {
+  width: 30px;
+  height: 43px;
+  padding: 2px 1px;
+  border-radius: 6px;
+  cursor: default;
+  pointer-events: none;
+}
+.wish-preview .card .card-rank-top,
+.wish-preview .card .card-rank-bot { font-size: 7px; }
+.wish-preview .card .card-suit { font-size: 11px; }
+.wish-preview .card.special .card-suit { font-size: 13px; }
+.wish-preview .card:hover { transform: none; box-shadow: 0 2px 8px var(--shadow); }
+
+.wish-empty {
+  font-size: 11px;
+  color: var(--text-light);
+  font-style: italic;
 }
 
 /* Rank picker */
