@@ -1,6 +1,6 @@
 import { decideAction } from './ai/aiPlayer.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
-import { saveGameState } from './room-manager.js';
+import { saveGameState, getLatestGameState } from './room-manager.js';
 
 let _running = false;
 let _roomId = null;
@@ -82,7 +82,11 @@ export async function onRoomStateChange(roomData, myId) {
       _armWatchdog(active.id, gs);
       await _runWithDelay(async () => {
         _clearWatchdog();
-        const fresh = JSON.parse(JSON.stringify(gs));
+        // Re-fetch latest state before acting — a human may have bombed during the delay window
+        const latestGs = await getLatestGameState(_roomId);
+        if (!latestGs?.currentRound || latestGs.currentRound.activePlayerId !== active.id) return;
+
+        const fresh = JSON.parse(JSON.stringify(latestGs));
         let action = decideAction(fresh, active.id);
 
         // Tichu call: do it then immediately decide the actual play in same save
@@ -92,7 +96,6 @@ export async function onRoomStateChange(roomData, myId) {
         }
 
         if (!action || action.action === 'pass') {
-          // Fallback: pass
           const result = pass(fresh, active.id);
           if (result?.error) console.warn('[HostRunner] pass error:', result.error);
         } else if (action.action === 'play') {
@@ -104,7 +107,7 @@ export async function onRoomStateChange(roomData, myId) {
         }
 
         await saveGameState(_roomId, fresh);
-      });
+      }, 1500);
     } else {
       _clearWatchdog();
     }
