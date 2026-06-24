@@ -283,16 +283,50 @@ body { overflow: hidden; height: 100vh; }
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  width: 180px;
-  min-height: 90px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 3px;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  gap: 5px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 16px;
+  border: 1.5px solid rgba(201,184,245,0.35);
+  padding: 8px 10px;
+  min-width: 70px;
+  max-width: 240px;
+  box-shadow: 0 4px 20px rgba(100,80,160,0.15);
+  z-index: 5;
 }
 
-.trick-play { display: flex; gap: 2px; }
+/* Mini cards inside trick area */
+#trick-area .card {
+  width: 36px;
+  height: 51px;
+  padding: 2px 2px;
+  border-radius: 7px;
+  flex-shrink: 0;
+}
+#trick-area .card .card-rank-top,
+#trick-area .card .card-rank-bot { font-size: 9px; line-height: 1.1; }
+#trick-area .card .card-suit { font-size: 13px; }
+#trick-area .card.special .card-suit { font-size: 17px; }
+
+.trick-play {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  max-width: 220px;
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes cardPlay {
+  from { transform: translateY(-16px) scale(0.75); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+.trick-play.anim { animation: cardPlay 0.22s ease-out forwards; }
 
 /* ── Sidebar ── */
 .score-panel h3 {
@@ -361,14 +395,6 @@ body { overflow: hidden; height: 100vh; }
 #wish-indicator.active { display: inline-block; animation: bounce 1s ease-in-out infinite; }
 
 /* ── Modals ── */
-.modal-overlay {
-  align-items: flex-end !important;
-}
-
-@media (min-width: 600px) {
-  .modal-overlay { align-items: center !important; }
-}
-
 .modal {
   max-height: 90vh;
   overflow-y: auto;
@@ -485,24 +511,24 @@ body { overflow: hidden; height: 100vh; }
 .hint-name    { color: var(--lavender-dark); margin-right: 4px; }
 .hint-desc    { color: var(--text-light); font-weight: 400; font-size: 11px; }
 
-/* ── Trick combo label ── */
-.trick-combo-label {
+/* ── Trick labels ── */
+.trick-who {
   text-align: center;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--lavender-dark);
-  background: rgba(201,184,245,0.25);
-  border-radius: 50px;
-  padding: 2px 10px;
-  margin-top: 4px;
   white-space: nowrap;
 }
 
-.trick-who {
+.trick-combo-label {
   text-align: center;
   font-size: 10px;
-  color: var(--text-light);
-  margin-top: 2px;
+  font-weight: 800;
+  color: var(--lavender-dark);
+  background: rgba(201,184,245,0.3);
+  border-radius: 50px;
+  padding: 2px 8px;
+  white-space: nowrap;
 }
 
 /* ── Ghost button ── */
@@ -580,6 +606,13 @@ body { overflow: hidden; height: 100vh; }
 .rules-combo-tag.pts  { background: rgba(178,240,224,0.4); color: #2a8c6a; }
 .rules-combo-tag.neg  { background: rgba(255,100,100,0.15); color: #c0392b; }
 
+/* ── My turn glow ── */
+@keyframes myTurnGlow {
+  0%,100% { border-top-color: rgba(201,184,245,0.3); }
+  50%      { border-top-color: var(--mint-dark); box-shadow: inset 0 3px 10px rgba(125,212,191,0.35); }
+}
+#hand-area.my-turn { animation: myTurnGlow 1.5s ease-in-out infinite; }
+
 /* ── Finish order badges ── */
 .finish-badge {
   display: inline-block;
@@ -633,46 +666,102 @@ body { overflow: hidden; height: 100vh; }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
+  /* Root grid: single column */
   #game-root {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "top-bar"
-      "table"
-      "hand";
+    grid-template-areas: "top-bar" "table" "hand";
     grid-template-rows: auto 1fr auto;
   }
-
   #sidebar { display: none; }
 
-  #top-bar { padding: 6px 10px; }
-  #status-bar { font-size: 11px; padding: 4px 10px; min-width: 100px; }
+  /* Top bar */
+  #top-bar { padding: 5px 8px; gap: 5px; flex-wrap: nowrap; }
+  #status-bar { font-size: 11px; padding: 4px 8px; min-width: 70px; }
+  #btn-tichu { font-size: 11px; padding: 5px 9px; }
+  #btn-rules { font-size: 11px; padding: 5px 9px; }
+  #wish-indicator { font-size: 11px; padding: 3px 8px; }
 
-  #hand-area { padding: 8px 8px 10px; min-height: 110px; max-height: 170px; gap: 6px; }
+  /* Table fills available area */
+  #table-area { align-items: stretch; padding: 0; }
+  #table {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-areas:
+      "north north north"
+      "west  .     east";
+    grid-template-columns: 66px 1fr 66px;
+    grid-template-rows: auto 1fr;
+    gap: 4px;
+    padding: 6px;
+  }
 
-  .card { width: 44px; height: 63px; padding: 3px 2px; }
+  /* Player zones: remove absolute positioning */
+  .player-zone { position: static !important; transform: none !important; }
+
+  /* North: horizontal strip */
+  .player-zone.north {
+    grid-area: north;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255,255,255,0.5);
+    border-radius: 12px;
+    padding: 5px 10px;
+    min-width: 0;
+    width: auto;
+  }
+  .player-zone.north .player-info {
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .player-zone.north .opponent-cards {
+    flex: 1;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* West / East: vertical column */
+  .player-zone.west { grid-area: west; align-items: center; justify-content: center; }
+  .player-zone.east { grid-area: east; align-items: center; justify-content: center; }
+  .player-zone.west .opponent-cards,
+  .player-zone.east .opponent-cards { flex-direction: column; align-items: center; gap: 2px; }
+
+  /* Trick area: centered absolute, capped width */
+  #trick-area { max-width: 175px; padding: 6px 8px; }
+
+  /* Hand area */
+  #hand-area { padding: 6px 8px 8px; min-height: 100px; max-height: 175px; gap: 5px; }
+
+  /* Cards in hand: slightly smaller */
+  .card { width: 42px; height: 60px; padding: 2px 2px; }
   .card-rank-top, .card-rank-bot { font-size: 10px; }
   .card-suit { font-size: 16px; }
-  .card.special .card-suit { font-size: 22px; }
+  .card.special .card-suit { font-size: 20px; }
   .card:hover  { transform: translateY(-5px); }
   .card.selected { transform: translateY(-11px); }
 
-  .card-back { width: 36px; height: 52px; font-size: 14px; }
+  /* Card backs (opponents) */
+  .card-back { width: 32px; height: 46px; font-size: 13px; }
 
-  #table { width: 94vw; height: 38vh; }
+  /* Avatars */
+  .player-avatar { width: 30px; height: 30px; font-size: 14px; }
+  .player-name { font-size: 9px; max-width: 52px; }
+  .player-hand-count { font-size: 9px; }
 
-  .player-avatar { width: 34px; height: 34px; font-size: 16px; }
-  .player-name { font-size: 10px; max-width: 58px; }
-
-  #trick-area { width: 140px; }
-
+  /* Exchange modal */
+  .modal { padding: 20px 16px; border-radius: 20px; }
   .exchange-slots { gap: 8px; }
-  .exchange-slot-box { width: 44px; height: 63px; }
-
-  #btn-tichu { font-size: 11px; padding: 5px 10px; }
+  .exchange-slot-box { width: 42px; height: 60px; }
 }
 
 @media (max-width: 380px) {
-  .card { width: 38px; height: 55px; }
-  .card-rank-top, .card-rank-bot { font-size: 9px; }
+  .card { width: 36px; height: 52px; }
+  .card-rank-top, .card-rank-bot { font-size: 8px; }
   .card-suit { font-size: 13px; }
+  .card-back { width: 28px; height: 40px; font-size: 11px; }
 }

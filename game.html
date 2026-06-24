@@ -114,7 +114,7 @@
       <h2>라지 티츄!</h2>
       <p>처음 8장을 보고 콜할지 결정하세요.<br><b style="color:#c8900a;">성공: +200점 / 실패: -200점</b></p>
       <div id="grand-tichu-sort" class="sort-bar" style="justify-content:center; margin:8px 0 0;"></div>
-      <div id="grand-tichu-hand" class="modal-hand" style="justify-content:center;"></div>
+      <div id="grand-tichu-hand" class="modal-hand"></div>
       <div class="timer-bar"><div class="timer-fill" id="grand-tichu-timer" style="width:100%;"></div></div>
       <div style="display:flex; gap:10px; margin-top:16px;">
         <button class="btn btn-danger btn-full" id="btn-grand-tichu-yes">👑 라지 티츄!</button>
@@ -238,7 +238,7 @@
 
   <!-- Bomb Modal -->
   <div class="modal-overlay" id="modal-bomb" style="display:none;">
-    <div class="modal-card" style="max-width:480px;">
+    <div class="modal" style="max-width:480px; text-align:left;">
       <h3 style="margin:0 0 12px;">💣 폭탄 선택</h3>
       <p style="font-size:12px;color:var(--text-light);margin:0 0 14px;">현재 트릭을 이길 수 있는 폭탄만 표시돼요.</p>
       <div id="bomb-list"></div>
