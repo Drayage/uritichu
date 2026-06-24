@@ -192,7 +192,17 @@ function phoenixSingleRank(currentRank) {
 }
 
 function getValidMoves(hand, currentCombo, wishRank) {
-  if (!currentCombo) return getAllCombinations(hand, wishRank);
+  const hasWishedCard = (m) => m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank));
+
+  if (!currentCombo) {
+    // Lead turn: bombs don't exempt from wish obligation; must lead with wish rank if possible
+    const all = getAllCombinations(hand, null);
+    if (wishRank) {
+      const withWish = all.filter(hasWishedCard);
+      if (withWish.length > 0) return withWish;
+    }
+    return all;
+  }
 
   const moves = [];
   const bombs = getBombs(hand);
@@ -202,8 +212,15 @@ function getValidMoves(hand, currentCombo, wishRank) {
   for (const combo of candidates) if (canBeat(combo, currentCombo)) moves.push(combo);
 
   if (wishRank) {
-    const withWish = moves.filter(m => m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank)));
-    if (withWish.length > 0) return withWish;
+    // Non-bomb moves that beat AND contain wished rank
+    const normalWithWish = moves.filter(m => !m.isBomb && hasWishedCard(m));
+    if (normalWithWish.length > 0) {
+      // Must play wish-fulfilling, OR can bomb to escape temporarily
+      return [...normalWithWish, ...moves.filter(m => m.isBomb)];
+    }
+    // Bomb is the only way to contain wished rank (e.g., quad-bomb of that rank)
+    const bombWithWish = moves.filter(m => m.isBomb && hasWishedCard(m));
+    if (bombWithWish.length > 0) return bombWithWish;
   }
   return moves;
 }
