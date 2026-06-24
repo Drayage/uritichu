@@ -36,9 +36,6 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 #table-area {
   grid-area: table;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   overflow: hidden;
 }
 
@@ -49,7 +46,8 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   backdrop-filter: blur(6px);
   border-top: 1px solid rgba(201,184,245,0.3);
   min-height: 130px;
-  max-height: 210px;
+  max-height: 280px;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -231,9 +229,8 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 
 /* ── Table ── */
 #table {
-  position: relative;
-  width: min(520px, 88vw);
-  height: min(380px, 46vh);
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
 }
 
 .player-zone {
@@ -244,10 +241,10 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   gap: 3px;
 }
 
-.player-zone.south { bottom: 0; left: 50%; transform: translateX(-50%); }
-.player-zone.north { top: 0;    left: 50%; transform: translateX(-50%); }
-.player-zone.west  { left: 0;  top: 50%;  transform: translateY(-50%); }
-.player-zone.east  { right: 0; top: 50%;  transform: translateY(-50%); }
+.player-zone.south { bottom: 8px; left: 50%; transform: translateX(-50%); }
+.player-zone.north { top: 8px;   left: 50%; transform: translateX(-50%); }
+.player-zone.west  { left: 8px;  top: 50%; transform: translateY(-50%); }
+.player-zone.east  { right: 8px; top: 50%; transform: translateY(-50%); }
 
 .player-info {
   display: flex;
@@ -324,7 +321,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   border: 1.5px solid rgba(201,184,245,0.35);
   padding: 8px 10px;
   min-width: 70px;
-  max-width: min(320px, 90vw);
+  max-width: min(520px, calc(100% - 100px));
   box-shadow: 0 4px 20px rgba(100,80,160,0.15);
   z-index: 5;
 }
@@ -347,7 +344,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   gap: 2px;
   justify-content: center;
   flex-wrap: wrap;
-  max-width: 300px;
+  max-width: 480px;
 }
 
 @keyframes cardPlay {
