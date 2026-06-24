@@ -7,9 +7,11 @@ let _roomId = null;
 let _hostId = null;
 let _watchdogTimer = null;
 let _watchdogForId = null;
-// If a state change arrives while _running, store it and replay after completion
 let _pendingRoomData = null;
 let _pendingMyId = null;
+let _fastMode = false;
+
+export function setAIFastMode(fast) { _fastMode = fast; }
 
 export function initHostRunner(roomId, hostId) {
   _roomId = roomId;
@@ -109,7 +111,7 @@ export async function onRoomStateChange(roomData, myId) {
         }
 
         await saveGameState(_roomId, fresh);
-      }, 1500);
+      }, _fastMode ? 180 : 1500);
     } else {
       _clearWatchdog();
     }

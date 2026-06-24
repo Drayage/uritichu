@@ -1,5 +1,5 @@
 import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
-import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
+import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
@@ -18,6 +18,7 @@ let lastRoundPhase = null;
 let sortMode = 'rank'; // 'rank' | 'suit'
 let _lastExchangeCard = null;
 let _replayActive = false;
+let _aiFastMode = false;
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -88,6 +89,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateTichuBadges(r.tichuCalls, r.grandTichuCalls);
     updateFinishBadges(r.finishOrder);
     renderTrick(r.currentTrick);
+
+    // Show speed button when all humans have finished (only AI remain)
+    if (r.phase === PHASE.PLAY && isHost) {
+      const humansDone = players.filter(p => !p.isAI).every(p => r.finishOrder.includes(p.id));
+      document.getElementById('btn-speed').style.display = humansDone ? '' : 'none';
+    } else {
+      document.getElementById('btn-speed').style.display = 'none';
+    }
 
     if (r.phase === PHASE.PLAY) {
       const handCounts = {};
@@ -944,6 +953,12 @@ function showSurrenderModal() {
   showModal('modal-surrender');
 }
 window._showSurrenderModal = showSurrenderModal;
+window._toggleAISpeed = () => {
+  _aiFastMode = !_aiFastMode;
+  setAIFastMode(_aiFastMode);
+  const btn = document.getElementById('btn-speed');
+  if (btn) { btn.textContent = _aiFastMode ? '⏩ 배속' : '▶▶ 배속'; btn.classList.toggle('active', _aiFastMode); }
+};
 window._openReplayModal = openReplayModal;
 window._closeReplayModal = closeReplayModal;
 window._replayPrev = replayPrev;
