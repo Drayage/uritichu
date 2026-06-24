@@ -1,4 +1,5 @@
 import { getValidMoves } from '../engine/combinations.js';
+import { getHighCardContext } from './aiUtils.js';
 
 function decideLead(hand, roundState, myId) {
   const { wishRank } = roundState;
@@ -8,12 +9,12 @@ function decideLead(hand, roundState, myId) {
     const wishMoves = moves.filter(m =>
       m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank))
     );
-    if (wishMoves.length > 0) return chooseLead(wishMoves, hand);
+    if (wishMoves.length > 0) return chooseLead(wishMoves, hand, roundState);
   }
-  return chooseLead(moves, hand);
+  return chooseLead(moves, hand, roundState);
 }
 
-function chooseLead(moves, hand) {
+function chooseLead(moves, hand, roundState) {
   const n = hand.length;
   const endgame = n <= 5;
 
@@ -56,8 +57,6 @@ function chooseLead(moves, hand) {
     fullhouses.sort((a, b) => b.rank - a.rank);
     return fullhouses[0];
   }
-  // Lead pairs/triples before singles: harder to beat (requires matching combo type),
-  // clears more cards per trick, and high pairs/triples are nearly unbeatable
   if (triples.length) {
     triples.sort((a, b) => b.rank - a.rank);
     return triples[0];
@@ -67,10 +66,26 @@ function chooseLead(moves, hand) {
     return pairs[0];
   }
 
-  // Singles: lead high to control the game and maintain the lead
+  // Singles: use card counting to pick the smartest lead
   if (singles.length) {
     const nonDragon = singles.filter(m => m.cards[0].rank !== 'dragon');
     const pool = nonDragon.length ? nonDragon : singles;
+
+    // If dragon is still unknown (not played yet) and we only have one ace,
+    // leading that ace risks losing it to an opponent's dragon.
+    // Prefer leading K in that case to test waters first.
+    if (roundState) {
+      const ctx = getHighCardContext(roundState);
+      const myAces = hand.filter(c => c.rank === 'A');
+      if (!ctx.dragonOut && myAces.length === 1) {
+        const kings = pool.filter(m => m.cards[0].rank === 'K');
+        if (kings.length > 0) {
+          kings.sort((a, b) => b.rank - a.rank);
+          return kings[0];
+        }
+      }
+    }
+
     pool.sort((a, b) => b.rank - a.rank);
     return pool[0];
   }
