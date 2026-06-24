@@ -200,7 +200,7 @@
       <div class="rules-card-list">
         <div class="rules-card-item">
           <span class="rules-card-icon special-mahjong-bg">🐦</span>
-          <div><b>참새 (마작)</b> — 선공권 획득. 내면서 상대가 반드시 내야 할 <b>숫자를 소원</b>으로 빌 수 있어요.</div>
+          <div><b>참새 (마작)</b> — 선공권 획득. <b>숫자 1 역할</b> (스트레이트에서 1로 사용 가능). 내면서 <b>소원</b>을 빌면 다른 플레이어가 그 숫자를 반드시 내야 해요.</div>
         </div>
         <div class="rules-card-item">
           <span class="rules-card-icon special-dog-bg">🐶</span>
@@ -208,35 +208,43 @@
         </div>
         <div class="rules-card-item">
           <span class="rules-card-icon special-phoenix-bg">🦚</span>
-          <div><b>불사조</b> — 어떤 패에나 끼워 쓸 수 있는 <b>조커</b>. 단장으로 낼 땐 현재 패보다 0.5 높아요. 폭탄에는 사용 불가.</div>
+          <div><b>불사조</b> — 어떤 패에나 끼워 쓸 수 있는 <b>조커</b>. 단장으로 낼 땐 <b>현재 패 + 0.5</b> 값 (선공 시 1.5). 폭탄에는 사용 불가.</div>
         </div>
         <div class="rules-card-item">
           <span class="rules-card-icon special-dragon-bg">🐉</span>
-          <div><b>용 (드래곤)</b> — 가장 강한 단장. 이기면 <b>그 트릭 전체를 상대팀에 양도</b>해야 해요.</div>
+          <div><b>용 (드래곤)</b> — 가장 강한 단장 (숫자 15). 이기면 <b>그 트릭을 상대팀 누군가에게 양도</b>해야 해요.</div>
         </div>
       </div>
 
       <h3 class="rules-section">족보 (낮은 순)</h3>
       <div class="rules-combo-list">
-        <div class="rules-combo-row"><span class="rules-combo-tag">단장</span>카드 1장. 숫자가 높을수록 강해요.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">단장</span>카드 1장. 숫자가 높을수록 강해요. 참새(1) &lt; 2~A &lt; 용(15)</div>
         <div class="rules-combo-row"><span class="rules-combo-tag">페어</span>같은 숫자 2장.</div>
         <div class="rules-combo-row"><span class="rules-combo-tag">트리플</span>같은 숫자 3장.</div>
         <div class="rules-combo-row"><span class="rules-combo-tag">풀하우스</span>트리플 + 페어 조합 5장. 트리플의 숫자로 강도 결정.</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag">스트레이트</span>연속된 숫자 5장 이상.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">스트레이트</span>연속된 숫자 5장 이상. 참새=1, 불사조=조커로 사용 가능.</div>
         <div class="rules-combo-row"><span class="rules-combo-tag">연속페어</span>연속된 숫자의 페어 4장 이상 (예: 5·5·6·6).</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 포카드</span>같은 숫자 4장. 폭탄 — 어떤 패도 이겨요!</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 스티플</span>같은 무늬 5장 이상 연속. 더 긴 스티플이 더 강해요.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 포카드</span>같은 숫자 4장. 어떤 패도 이겨요!</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag bomb">💣 스티플</span>같은 무늬 5장 이상 연속. 긴 스티플이 더 강해요.</div>
+      </div>
+
+      <h3 class="rules-section">소원 (위시)</h3>
+      <div class="rules-combo-list">
+        <div class="rules-combo-row"><span class="rules-combo-tag">기본</span>참새를 내면서 숫자를 지정하면 다른 플레이어는 그 숫자를 낼 수 있으면 반드시 내야 해요.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">폭탄 예외</span>소원을 폭탄으로 일시 회피 가능. 단, 폭탄으로 선공권을 얻어도 소원이 미이행 중이면 선공 시 반드시 소원을 이루어야 해요.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag neg">몰수패</span>이루어 줄 수 있었는데 안 낸 팀 → 상대팀 원-투 처리 (공식 룰, 이 게임은 알림만 해요)</div>
       </div>
 
       <h3 class="rules-section">점수</h3>
       <div class="rules-combo-list">
-        <div class="rules-combo-row"><span class="rules-combo-tag pts">5점</span>5 카드 (각 무늬 4장)</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag pts">10점</span>10, K 카드</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag pts">+25점</span>용 🐉 트릭 승리 시</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag neg">-25점</span>불사조 🦚 (패를 가져간 팀이 잃어요)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">5점</span>숫자 5 카드 (무늬별 4장 = 총 20점)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">10점</span>숫자 10, K 카드 (각 40점)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">+25점</span>용 🐉 (트릭을 이기는 팀이 획득)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag neg">-25점</span>불사조 🦚 (트릭을 가져간 팀이 잃어요)</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag">꼴등 패널티</span>꼴등이 딴 점수는 → <b>1등 팀</b>에게. 꼴등 손패 점수는 → <b>상대 팀</b>에게. 꼴등은 0점.</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">원-투 +200</span>같은 팀이 1·2등 → 카드 점수 계산 없이 그 팀이 +200점.</div>
         <div class="rules-combo-row"><span class="rules-combo-tag pts">티츄 ±100</span>선언 후 1등 하면 +100, 실패 시 -100</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag pts">라지티츄 ±200</span>8장 보고 선언. 1등 하면 +200, 실패 시 -200</div>
-        <div class="rules-combo-row"><span class="rules-combo-tag pts">원-투 +200</span>같은 팀 1·2등 시 자동 +200점</div>
+        <div class="rules-combo-row"><span class="rules-combo-tag pts">라지티츄 ±200</span>처음 8장 보고 선언. 1등 하면 +200, 실패 시 -200</div>
       </div>
     </div>
   </div>

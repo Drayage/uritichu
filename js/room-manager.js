@@ -1,4 +1,4 @@
-import { db, ref, set, update, get, onValue } from './firebase-app.js';
+import { db, ref, set, update, get, onValue, remove } from './firebase-app.js';
 
 function genRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -60,6 +60,10 @@ async function addAI(roomId) {
   await update(ref(db, `tichu/rooms/${roomId}/players`), { [aiId]: player });
 }
 
+async function removeAI(roomId, aiPlayerId) {
+  await remove(ref(db, `tichu/rooms/${roomId}/players/${aiPlayerId}`));
+}
+
 async function fillWithAI(roomId) {
   const snap = await get(roomRef(roomId));
   if (!snap.exists()) return;
@@ -101,4 +105,4 @@ async function getLatestGameState(roomId) {
   return data.gameStateJson ? JSON.parse(data.gameStateJson) : null;
 }
 
-export { createRoom, joinRoom, addAI, fillWithAI, saveGameState, setRoomPhase, listenRoom, getLatestGameState };
+export { createRoom, joinRoom, addAI, removeAI, fillWithAI, saveGameState, setRoomPhase, listenRoom, getLatestGameState };
