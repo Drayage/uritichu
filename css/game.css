@@ -722,7 +722,6 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   pointer-events: none;
   z-index: 2;
 }
-.player-zone { position: relative; }
 
 /* ── Surrender button ── */
 .btn-surrender {
