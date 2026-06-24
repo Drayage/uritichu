@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>우리 티츄 🐦</title>
+  <link rel="stylesheet" href="css/lobby.css">
+</head>
+<body>
+  <div class="lobby-wrap">
+    <div style="text-align:center; margin-bottom:12px;">
+      <span class="lobby-logo">🀄</span>
+      <h1 class="lobby-title">우리 티츄</h1>
+      <p class="lobby-sub">귀여운 4인용 카드 게임 🐱🐰🐻🦊</p>
+    </div>
+
+    <!-- Main panel -->
+    <div class="panel lobby-card" id="panel-main">
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-tab="online">🌐 온라인</button>
+        <button class="mode-tab" data-tab="solo">🤖 솔로</button>
+      </div>
+
+      <!-- Online tab -->
+      <div id="tab-online">
+        <div class="form-group">
+          <label>닉네임</label>
+          <input class="form-input" id="input-name" placeholder="귀여운 이름..." maxlength="12">
+        </div>
+        <button class="btn btn-primary btn-full" id="btn-create">✨ 방 만들기</button>
+        <div class="divider">또는</div>
+        <div class="form-group">
+          <label>방 코드</label>
+          <input class="form-input" id="input-room-code" placeholder="6자리 코드..." maxlength="6" style="text-transform:uppercase; letter-spacing:3px;">
+        </div>
+        <button class="btn btn-secondary btn-full" id="btn-join">🚪 방 입장</button>
+      </div>
+
+      <!-- Solo tab -->
+      <div id="tab-solo" style="display:none;">
+        <div style="text-align:center; margin-bottom:20px;">
+          <div style="font-size:48px; margin-bottom:8px;">🐱🐰🐻🦊</div>
+          <p style="color:var(--text-light); font-size:14px;">AI 3명과 함께 티츄를 즐겨보세요!</p>
+        </div>
+        <div class="form-group">
+          <label>닉네임</label>
+          <input class="form-input" id="input-solo-name" placeholder="내 이름..." maxlength="12">
+        </div>
+        <button class="btn btn-success btn-full" id="btn-solo">🎮 바로 시작!</button>
+      </div>
+    </div>
+
+    <!-- Lobby room panel -->
+    <div class="panel lobby-card" id="panel-room" style="display:none;">
+      <div class="room-header">
+        <div>
+          <div style="font-size:12px; color:var(--text-light); font-weight:700; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px;">방 코드</div>
+          <div class="room-id-badge" id="room-code-display"></div>
+        </div>
+        <button class="btn btn-secondary" id="btn-copy" style="font-size:13px; padding:8px 14px;">📋 복사</button>
+      </div>
+
+      <div class="team-legend">
+        <span><span class="team-dot a"></span>팀 A (0, 2번 자리)</span>
+        <span><span class="team-dot b"></span>팀 B (1, 3번 자리)</span>
+      </div>
+
+      <div class="seats-grid" id="seats-grid"></div>
+
+      <div style="display:flex; gap:8px; margin-top:4px;">
+        <button class="btn btn-secondary" id="btn-add-ai" style="flex:1; font-size:13px;">🤖 AI 추가</button>
+        <button class="btn btn-primary" id="btn-start" style="flex:2;">🎮 게임 시작!</button>
+      </div>
+
+      <div id="room-error" style="color:#ff6b9d; font-size:13px; text-align:center; margin-top:8px; display:none;"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/lobby.js"></script>
+</body>
+</html>
