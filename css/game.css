@@ -1,7 +1,11 @@
 @import './common.css';
 
 /* ── Layout ── */
-body { overflow: hidden; height: 100vh; }
+html {
+  height: 100%;
+  background: linear-gradient(135deg, #e8f5ff 0%, #f5e8ff 50%, #fff0e8 100%);
+}
+body { overflow: hidden; height: 100vh; background: transparent; }
 
 #game-root {
   width: 100vw;
@@ -713,6 +717,7 @@ body { overflow: hidden; height: 100vh; }
 /* ── Responsive ── */
 @media (max-width: 640px) {
   /* Use dynamic viewport height (accounts for mobile browser chrome) */
+  html { height: 100dvh; }
   body { height: 100dvh; overflow: hidden; }
   #game-root {
     height: 100dvh;
@@ -753,7 +758,7 @@ body { overflow: hidden; height: 100vh; }
     flex-direction: row;
     align-items: center;
     gap: 8px;
-    background: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.35);
     border-radius: 12px;
     padding: 5px 10px;
     min-width: 0;

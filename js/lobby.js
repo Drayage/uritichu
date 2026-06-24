@@ -3,6 +3,21 @@ import { createRoom, joinRoom, addAI, fillWithAI, listenRoom } from './room-mana
 let myPlayerId = null;
 let myRoomId = null;
 let unsubscribeRoom = null;
+let selectedAvatar = localStorage.getItem('selectedAvatar') || '🐱';
+
+// Avatar picker
+{
+  const grid = document.getElementById('avatar-grid');
+  grid.querySelectorAll('.avatar-opt').forEach(btn => {
+    if (btn.dataset.emoji === selectedAvatar) btn.classList.add('selected');
+    btn.addEventListener('click', () => {
+      grid.querySelectorAll('.avatar-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedAvatar = btn.dataset.emoji;
+      localStorage.setItem('selectedAvatar', selectedAvatar);
+    });
+  });
+}
 
 // Tab switching
 document.querySelectorAll('.mode-tab').forEach(tab => {
@@ -19,7 +34,7 @@ document.querySelectorAll('.mode-tab').forEach(tab => {
 document.getElementById('btn-create').addEventListener('click', async () => {
   const name = document.getElementById('input-name').value.trim() || '익명';
   try {
-    const { roomId, playerId } = await createRoom(name);
+    const { roomId, playerId } = await createRoom(name, selectedAvatar);
     myPlayerId = playerId;
     myRoomId = roomId;
     sessionStorage.setItem('playerId', playerId);
@@ -36,7 +51,7 @@ document.getElementById('btn-join').addEventListener('click', async () => {
   const code = document.getElementById('input-room-code').value.trim().toUpperCase();
   if (!code) { showError('방 코드를 입력하세요'); return; }
   try {
-    const { roomId, playerId } = await joinRoom(code, name);
+    const { roomId, playerId } = await joinRoom(code, name, selectedAvatar);
     myPlayerId = playerId;
     myRoomId = roomId;
     sessionStorage.setItem('playerId', playerId);
@@ -51,7 +66,7 @@ document.getElementById('btn-join').addEventListener('click', async () => {
 document.getElementById('btn-solo').addEventListener('click', async () => {
   const name = document.getElementById('input-solo-name').value.trim() || '나';
   try {
-    const { roomId, playerId } = await createRoom(name);
+    const { roomId, playerId } = await createRoom(name, selectedAvatar);
     myPlayerId = playerId;
     myRoomId = roomId;
     sessionStorage.setItem('playerId', playerId);

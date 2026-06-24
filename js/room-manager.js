@@ -16,10 +16,10 @@ function roomRef(roomId) {
 }
 
 // Returns { roomId, playerId, isHost }
-async function createRoom(playerName) {
+async function createRoom(playerName, avatar = '🙂') {
   const roomId = genRoomId();
   const playerId = genPlayerId();
-  const player = { id: playerId, name: playerName, seat: 0, teamIndex: 0, isAI: false, avatar: '🙂' };
+  const player = { id: playerId, name: playerName, seat: 0, teamIndex: 0, isAI: false, avatar };
   await set(roomRef(roomId), {
     hostId: playerId,
     phase: 'lobby',
@@ -31,7 +31,7 @@ async function createRoom(playerName) {
 }
 
 // Returns { roomId, playerId, isHost } or throws
-async function joinRoom(roomId, playerName) {
+async function joinRoom(roomId, playerName, avatar = '🙂') {
   const snap = await get(roomRef(roomId));
   if (!snap.exists()) throw new Error('방을 찾을 수 없어요');
   const data = snap.val();
@@ -42,7 +42,7 @@ async function joinRoom(roomId, playerName) {
   const playerId = genPlayerId();
   const takenSeats = existing.map(p => p.seat);
   const seat = [0,1,2,3].find(s => !takenSeats.includes(s));
-  const player = { id: playerId, name: playerName, seat, teamIndex: seat % 2, isAI: false, avatar: '🙂' };
+  const player = { id: playerId, name: playerName, seat, teamIndex: seat % 2, isAI: false, avatar };
   await update(ref(db, `tichu/rooms/${roomId}/players`), { [playerId]: player });
   return { roomId, playerId, isHost: false };
 }
