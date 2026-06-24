@@ -1,4 +1,4 @@
-import { createRoom, joinRoom, addAI, fillWithAI, listenRoom } from './room-manager.js';
+import { createRoom, joinRoom, addAI, removeAI, fillWithAI, listenRoom } from './room-manager.js';
 
 let myPlayerId = null;
 let myRoomId = null;
@@ -123,6 +123,7 @@ function renderSeats(room) {
   grid.innerHTML = '';
   const teamNames = ['A', 'B'];
   const seatPositions = ['남쪽(나)', '서쪽', '북쪽', '동쪽'];
+  const amHost = room.hostId === myPlayerId;
 
   for (let seat = 0; seat < 4; seat++) {
     const player = room.players.find(p => p.seat === seat);
@@ -136,6 +137,15 @@ function renderSeats(room) {
         <div class="seat-label">팀 ${teamNames[seat % 2]} · ${seatPositions[seat]}</div>
         ${player.isAI ? '<div style="font-size:10px;color:var(--text-light);">🤖 AI</div>' : ''}
       `;
+      if (player.isAI && amHost) {
+        const removeBtn = document.createElement('button');
+        removeBtn.textContent = '❌ 빼기';
+        removeBtn.style.cssText = 'margin-top:6px;font-size:11px;padding:3px 10px;border-radius:50px;background:rgba(255,100,100,0.12);color:#c0392b;border:1px solid rgba(255,100,100,0.3);cursor:pointer;';
+        removeBtn.addEventListener('click', async () => {
+          try { await removeAI(myRoomId, player.id); } catch (e) { showError(e.message); }
+        });
+        div.appendChild(removeBtn);
+      }
     } else {
       div.innerHTML = `<div style="font-size:24px;color:#ccc;">＋</div><div class="seat-label">팀 ${teamNames[seat % 2]} · ${seatPositions[seat]}</div>`;
     }
