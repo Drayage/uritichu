@@ -123,18 +123,25 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   max-width: 100%;
 }
 
-/* Card point value overlay */
+/* Card point value badge — top-right circle */
 .card-pts {
   position: absolute;
-  bottom: 2px;
-  right: 3px;
-  font-size: 7px;
+  top: 2px;
+  right: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #ff9800;
+  color: #fff;
+  font-size: 8px;
   font-weight: 900;
-  line-height: 1;
-  color: #c87000;
+  line-height: 16px;
+  text-align: center;
   pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
 }
-.card-pts.neg { color: #c0392b; }
+.card-pts.neg { background: #c0392b; }
 
 .card.suit-jade .card-rank-top,
 .card.suit-jade .card-rank-bot { color: #2eb87a; }

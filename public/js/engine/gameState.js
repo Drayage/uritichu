@@ -103,7 +103,18 @@ function playCards(gameState, playerId, combination, wishRank) {
   r.currentTrick.winnerId = playerId;
   r.currentTrick.winningCombo = combination;
   r.passCount = 0;
-  if (r.hands[playerId].length === 0) r.finishOrder.push(playerId);
+  if (r.hands[playerId].length === 0) {
+    r.finishOrder.push(playerId);
+    if (r.finishOrder.length === 2) {
+      const p1 = gameState.players.find(p => p.id === r.finishOrder[0]);
+      const p2 = gameState.players.find(p => p.id === r.finishOrder[1]);
+      if (p1 && p2 && p1.teamIndex === p2.teamIndex) {
+        if (r.currentTrick) { r.pastTricks.push(r.currentTrick); r.currentTrick = null; }
+        r.passCount = 0;
+        return endRound(gameState);
+      }
+    }
+  }
   if (combination.cards.some(c => c.rank === 'dragon') && r.finishOrder.length < 3) {
     r.dragonGivePending = true;
     r.dragonGiveWinner = playerId;
@@ -213,6 +224,7 @@ function endRound(gameState) {
   gameState.rounds.push(r);
   const t0 = gameState.totalScores.team0, t1 = gameState.totalScores.team1;
   if (t0 >= gameState.targetScore || t1 >= gameState.targetScore) {
+    r.phase = PHASE.GAME_OVER;
     gameState.phase = PHASE.GAME_OVER;
     gameState.gameOver = true;
     gameState.winningTeam = t0 > t1 ? 0 : 1;

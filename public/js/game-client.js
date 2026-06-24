@@ -63,6 +63,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     const r = gs.currentRound;
 
     // Detect phase transitions
+    const prevRoundPhase = lastRoundPhase;
     if (r.phase !== lastRoundPhase) {
       handlePhaseChange(r.phase, gs, r);
       lastRoundPhase = r.phase;
@@ -96,7 +97,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       showDragonModal();
     }
 
-    if (r.phase === PHASE.ROUND_OVER && lastRoundPhase !== PHASE.ROUND_OVER) {
+    if (r.phase === PHASE.ROUND_OVER && prevRoundPhase !== PHASE.ROUND_OVER) {
       const lastRound = gs.rounds[gs.rounds.length - 1] || r;
       // recalc deltas from total scores change
       showRoundOverModal(r.finishOrder, gs.totalScores, gs.rounds.length);
@@ -798,21 +799,11 @@ function calcCardPoints(cards) {
 
 function updateTrickPoints(r) {
   if (!r?.trickWinners) return;
-  // Calculate per-team cumulative trick points
-  const teamPts = { 0: 0, 1: 0 };
-  for (const [pid, cards] of Object.entries(r.trickWinners)) {
-    const p = players.find(x => x.id === pid);
-    if (!p) continue;
-    teamPts[p.teamIndex] += calcCardPoints(cards);
-  }
-  // Display under each player zone
   for (const zone of ['north', 'west', 'east', 'me']) {
     const pid = zone === 'me' ? myPlayerId : getPlayerIdForZone(zone);
     const el = document.getElementById(`trick-pts-${zone}`);
     if (!el || !pid) continue;
-    const p = players.find(x => x.id === pid);
-    if (!p) continue;
-    const pts = teamPts[p.teamIndex];
+    const pts = calcCardPoints(r.trickWinners[pid] || []);
     el.textContent = pts !== 0 ? `${pts}점` : '';
   }
 }

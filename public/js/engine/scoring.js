@@ -26,13 +26,13 @@ function scoreRound(roundState, players) {
   for (const pid of allPlayerIds) playerTrickPts[pid] = 0;
   for (const pid of allPlayerIds) playerTrickPts[pid] = scoreTrick(trickWinners[pid] || []);
 
+  const firstTeam = teamOf(first);
+  teamPoints[`team${firstTeam}`] += playerTrickPts[lastPlayer];
+
   const lastTeam = teamOf(lastPlayer);
   const oppTeam = 1 - lastTeam;
-  teamPoints[`team${oppTeam}`] += playerTrickPts[lastPlayer];
-
-  const firstTeam = teamOf(first);
   const handPts = scoreTrick(hands[lastPlayer] || []);
-  teamPoints[`team${firstTeam}`] += handPts;
+  teamPoints[`team${oppTeam}`] += handPts;
 
   for (const pid of allPlayerIds) {
     if (pid === lastPlayer) continue;
