@@ -60,7 +60,7 @@ document.getElementById('btn-solo').addEventListener('click', async () => {
     await fillWithAI(roomId);
     // Start immediately by navigating to game (host will start round)
     sessionStorage.setItem('autoStart', 'true');
-    window.location.href = '/game.html';
+    window.location.href = './game.html';
   } catch (e) { showError(e.message); }
 });
 
