@@ -1,6 +1,7 @@
 import { createDeck, shuffleDeck, dealCards } from './cards.js';
 import { applyExchanges } from './exchange.js';
 import { scoreRound } from './scoring.js';
+import { canBeat } from './combinations.js';
 
 const PHASE = {
   DEAL_8: 'deal_8', GRAND_TICHU: 'grand_tichu', DEAL_6: 'deal_6',
@@ -84,7 +85,12 @@ function callTichu(gameState, playerId) {
 function playCards(gameState, playerId, combination, wishRank) {
   const r = gameState.currentRound;
   if (r.phase !== PHASE.PLAY) return { error: 'wrong phase' };
-  if (r.activePlayerId !== playerId) return { error: 'not your turn' };
+  const isMyTurn = r.activePlayerId === playerId;
+  if (!isMyTurn) {
+    if (!combination.isBomb) return { error: 'not your turn' };
+    if (!r.currentTrick?.winningCombo) return { error: '선공 상태에서는 차례에 내야 해요' };
+    if (!canBeat(combination, r.currentTrick.winningCombo)) return { error: '현재 패를 이길 수 없어요' };
+  }
   const cardIds = new Set(combination.cards.map(c => c.id));
   r.hands[playerId] = r.hands[playerId].filter(c => !cardIds.has(c.id));
   r.tichuPlayed[playerId] = true;
