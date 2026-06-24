@@ -1,0 +1,12 @@
+{
+  "rules": {
+    "tichu": {
+      "rooms": {
+        "$roomId": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    }
+  }
+}
