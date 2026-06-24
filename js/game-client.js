@@ -12,6 +12,7 @@ let currentGs = null;
 let exchangeSelection = { left: null, across: null, right: null };
 let exchangePhase = false;
 let lastRoundPhase = null;
+let sortMode = 'rank'; // 'rank' | 'suit'
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -204,15 +205,48 @@ async function onExchangeConfirm() {
 }
 
 // ── Rendering ──
+function sortHand(hand) {
+  const SUIT_ORDER = { jade: 0, sword: 1, pagoda: 2, star: 3 };
+  return [...hand].sort((a, b) => {
+    if (sortMode === 'suit') {
+      const sa = a.isSpecial ? 4 : (SUIT_ORDER[a.suit] ?? 4);
+      const sb = b.isSpecial ? 4 : (SUIT_ORDER[b.suit] ?? 4);
+      if (sa !== sb) return sa - sb;
+      return a.numericValue - b.numericValue;
+    }
+    // rank mode
+    if (a.numericValue !== b.numericValue) return a.numericValue - b.numericValue;
+    return (a.suit || '').localeCompare(b.suit || '');
+  });
+}
+
+function setSortMode(mode) {
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.toggle('active', b.dataset.sort === mode));
+  renderMyHand();
+  if (exchangePhase) renderExchangeHand();
+}
+window._setSortMode = setSortMode;
+
+function renderSortBar(target) {
+  const bar = document.createElement('div');
+  bar.className = 'sort-bar';
+  for (const [mode, label] of [['rank','숫자순'],['suit','모양순']]) {
+    const btn = document.createElement('button');
+    btn.className = 'sort-btn' + (sortMode === mode ? ' active' : '');
+    btn.dataset.sort = mode;
+    btn.textContent = label;
+    btn.addEventListener('click', () => setSortMode(mode));
+    bar.appendChild(btn);
+  }
+  target.appendChild(bar);
+}
+
 function renderMyHand() {
   const container = document.getElementById('my-hand');
   container.innerHTML = '';
   document.getElementById('my-hand-count').textContent = myHand.length;
-  const sorted = [...myHand].sort((a, b) => {
-    if (a.numericValue !== b.numericValue) return a.numericValue - b.numericValue;
-    return (a.suit || '').localeCompare(b.suit || '');
-  });
-  for (const card of sorted) {
+  for (const card of sortHand(myHand)) {
     const el = createCardEl(card, true);
     el.addEventListener('click', () => toggleSelect(card, el));
     if (selectedIds.has(card.id)) el.classList.add('selected');
@@ -371,10 +405,27 @@ function disableActions() {
 }
 
 // ── Modals ──
-function showGrandTichuModal(hand8) {
+function renderGrandTichuHand(hand8) {
   const container = document.getElementById('grand-tichu-hand');
   container.innerHTML = '';
-  for (const card of hand8) container.appendChild(createCardEl(card));
+  for (const card of sortHand(hand8)) container.appendChild(createCardEl(card));
+}
+
+function showGrandTichuModal(hand8) {
+  renderGrandTichuHand(hand8);
+  // sort bar in grand tichu modal
+  const sortWrap = document.getElementById('grand-tichu-sort');
+  if (sortWrap) {
+    sortWrap.innerHTML = '';
+    for (const [mode, label] of [['rank','숫자순'],['suit','모양순']]) {
+      const btn = document.createElement('button');
+      btn.className = 'sort-btn' + (sortMode === mode ? ' active' : '');
+      btn.dataset.sort = mode;
+      btn.textContent = label;
+      btn.addEventListener('click', () => { setSortMode(mode); renderGrandTichuHand(hand8); });
+      sortWrap.appendChild(btn);
+    }
+  }
   showModal('modal-grand-tichu');
   let timeLeft = 15;
   const fill = document.getElementById('grand-tichu-timer');
@@ -423,7 +474,7 @@ function renderExchangeHand() {
   const container = document.getElementById('exchange-hand');
   container.innerHTML = '';
   const selectedInSlots = new Set(Object.values(exchangeSelection).filter(Boolean).map(c => c.id));
-  for (const card of myHand) {
+  for (const card of sortHand(myHand)) {
     const el = createCardEl(card, true);
     if (selectedInSlots.has(card.id)) { el.classList.add('dim'); el.style.cursor = 'default'; }
     else el.addEventListener('click', () => handleExchangeSelect(card));
