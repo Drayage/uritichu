@@ -94,4 +94,11 @@ function listenRoom(roomId, callback) {
   });
 }
 
-export { createRoom, joinRoom, addAI, fillWithAI, saveGameState, setRoomPhase, listenRoom };
+async function getLatestGameState(roomId) {
+  const snap = await get(roomRef(roomId));
+  if (!snap.exists()) return null;
+  const data = snap.val();
+  return data.gameStateJson ? JSON.parse(data.gameStateJson) : null;
+}
+
+export { createRoom, joinRoom, addAI, fillWithAI, saveGameState, setRoomPhase, listenRoom, getLatestGameState };
