@@ -1,7 +1,7 @@
 import { createDeck, shuffleDeck, dealCards } from './cards.js';
 import { applyExchanges } from './exchange.js';
 import { scoreRound } from './scoring.js';
-import { canBeat } from './combinations.js';
+import { canBeat, phoenixSingleRank } from './combinations.js';
 
 const PHASE = {
   DEAL_8: 'deal_8', GRAND_TICHU: 'grand_tichu', DEAL_6: 'deal_6',
@@ -97,11 +97,17 @@ function playCards(gameState, playerId, combination, wishRank) {
   if (combination.cards.length === 1 && combination.cards[0].rank === 'dog') return handleDog(gameState, playerId);
   if (combination.cards.some(c => c.rank === 'mahjong') && wishRank) r.wishRank = wishRank;
   if (r.wishRank && combination.cards.some(c => c.rank === r.wishRank || String(c.numericValue) === String(r.wishRank))) r.wishRank = null;
-  if (!r.currentTrick) r.currentTrick = { plays: [], leadPlayerId: playerId, winnerId: playerId, winningCombo: combination, cards: [] };
-  r.currentTrick.plays.push({ playerId, combination });
+  // Phoenix single: rank = current_winner_rank + 0.5 so next player needs that threshold
+  let adjustedCombo = combination;
+  if (combination.cards.length === 1 && combination.cards[0]?.rank === 'phoenix') {
+    const curRank = r.currentTrick?.winningCombo?.rank ?? null;
+    adjustedCombo = { ...combination, rank: phoenixSingleRank(curRank) };
+  }
+  if (!r.currentTrick) r.currentTrick = { plays: [], leadPlayerId: playerId, winnerId: playerId, winningCombo: adjustedCombo, cards: [] };
+  r.currentTrick.plays.push({ playerId, combination: adjustedCombo });
   r.currentTrick.cards.push(...combination.cards);
   r.currentTrick.winnerId = playerId;
-  r.currentTrick.winningCombo = combination;
+  r.currentTrick.winningCombo = adjustedCombo;
   r.passCount = 0;
   if (r.hands[playerId].length === 0) {
     r.finishOrder.push(playerId);

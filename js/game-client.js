@@ -98,9 +98,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (r.phase === PHASE.ROUND_OVER && prevRoundPhase !== PHASE.ROUND_OVER) {
-      const lastRound = gs.rounds[gs.rounds.length - 1] || r;
-      // recalc deltas from total scores change
-      showRoundOverModal(r.finishOrder, gs.totalScores, gs.rounds.length);
+      showRoundOverModal(r, gs.totalScores);
       disableActions();
     }
 
@@ -273,8 +271,12 @@ function createCardEl(card, clickable = false) {
   el.dataset.id = card.id;
   if (card.isSpecial) {
     el.classList.add('special', `special-${card.rank}`);
-    const sym = RANK_DISPLAY[card.rank] || card.rank;
-    el.innerHTML = `<div class="card-rank-top">${sym}</div><div class="card-suit">${sym}</div><div class="card-rank-bot">${sym}</div>`;
+    if (card.rank === 'mahjong') {
+      el.innerHTML = `<div class="card-rank-top">1</div><div class="card-suit">🐦</div><div class="card-rank-bot">1</div>`;
+    } else {
+      const sym = RANK_DISPLAY[card.rank] || card.rank;
+      el.innerHTML = `<div class="card-rank-top">${sym}</div><div class="card-suit">${sym}</div><div class="card-rank-bot">${sym}</div>`;
+    }
   } else {
     el.classList.add(`suit-${card.suit}`);
     const icon = SUIT_ICON[card.suit];
@@ -389,6 +391,15 @@ function renderTrick(trick) {
   label.className = 'trick-combo-label';
   label.textContent = comboLabel(trick.winningCombo);
   area.appendChild(label);
+
+  // Total points in this trick
+  const pts = calcCardPoints(trick.cards || []);
+  if (pts !== 0) {
+    const ptsEl = document.createElement('div');
+    ptsEl.className = 'trick-pts-total';
+    ptsEl.textContent = `${pts > 0 ? '+' : ''}${pts}점`;
+    area.appendChild(ptsEl);
+  }
 }
 
 // ── Player Zones ──
@@ -695,12 +706,46 @@ function showDragonModal() {
   showModal('modal-dragon');
 }
 
-function showRoundOverModal(finishOrder, totalScores, roundNum) {
+function showRoundOverModal(r, totalScores) {
   const el = document.getElementById('round-result');
-  const finishNames = finishOrder.map((pid, i) => `${['🥇','🥈','🥉','4등'][i]} ${getPlayerName(pid)}`).join('<br>');
+  const placeEmoji = ['🥇','🥈','🥉','4등'];
+  const teamLabel = (t) => t === 0 ? '🌿 팀 A' : '💜 팀 B';
+
+  const firstPid = r.finishOrder[0];
+  const secondPid = r.finishOrder[1];
+  const lastPid = r.finishOrder[r.finishOrder.length - 1];
+  const firstP = players.find(p => p.id === firstPid);
+  const secondP = players.find(p => p.id === secondPid);
+  const lastP = players.find(p => p.id === lastPid);
+  const isTadak = firstP && secondP && firstP.teamIndex === secondP.teamIndex;
+
+  // Finish order rows with individual trick points
+  const finishRows = r.finishOrder.map((pid, i) => {
+    const p = players.find(x => x.id === pid);
+    const trickPts = calcCardPoints(r.trickWinners?.[pid] || []);
+    const tl = p ? teamLabel(p.teamIndex) : '';
+    return `<div class="result-row"><span>${placeEmoji[i]} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span></span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
+  }).join('');
+
+  // Scoring notes
+  let notes = '';
+  if (isTadak) {
+    notes = `<div class="result-note">🎊 따닥! ${teamLabel(firstP.teamIndex)} → <b>+200점</b></div>`;
+  } else if (lastPid && lastP) {
+    const lastTrickPts = calcCardPoints(r.trickWinners?.[lastPid] || []);
+    const lastHandPts = calcCardPoints(r.lastPlayerHand || []);
+    const oppTeam = 1 - lastP.teamIndex;
+    if (lastTrickPts !== 0)
+      notes += `<div class="result-note">💀 꼴등 먹은점수 <b>${lastTrickPts}점</b> → ${teamLabel(firstP?.teamIndex ?? 0)}</div>`;
+    if (lastHandPts !== 0)
+      notes += `<div class="result-note">💀 꼴등 손패점수 <b>${lastHandPts}점</b> → ${teamLabel(oppTeam)}</div>`;
+  }
+
   el.innerHTML = `
-    <div style="margin-bottom:12px;font-size:14px;color:var(--text-light);">${finishNames}</div>
-    <div style="font-size:13px;color:var(--text-light);">누적: 팀 A ${totalScores.team0}점 · 팀 B ${totalScores.team1}점</div>
+    <div class="result-header">개인 획득 트릭점수</div>
+    ${finishRows}
+    ${notes ? `<div class="result-notes">${notes}</div>` : ''}
+    <div class="result-total">🌿 팀 A <b>${totalScores.team0}점</b> &nbsp;·&nbsp; 💜 팀 B <b>${totalScores.team1}점</b></div>
   `;
   showModal('modal-round-over');
 }
@@ -723,7 +768,15 @@ function showGameOverModal(winningTeam, totalScores) {
 function detectStateEffects(prev, curr) {
   const pr = prev.currentRound;
   const cr = curr.currentRound;
-  if (!pr || !cr || pr.phase !== 'play' || cr.phase !== 'play') return;
+  if (!pr || !cr || pr.phase !== 'play') return;
+
+  const prevPast = pr.pastTricks?.length || 0;
+  const currPast = cr.pastTricks?.length || 0;
+
+  // Dog: lead changed without a trick being added to pastTricks
+  if (cr.leadPlayerId !== pr.leadPlayerId && currPast === prevPast) {
+    showDogToast(cr.leadPlayerId);
+  }
 
   // Detect pass: passCount went up
   if (cr.passCount > pr.passCount && pr.activePlayerId) {
@@ -743,14 +796,22 @@ function detectStateEffects(prev, curr) {
     if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
   }
 
-  // Detect trick won: pastTricks grew → show who won and how many points
-  const prevPast = pr.pastTricks?.length || 0;
-  const currPast = cr.pastTricks?.length || 0;
+  // Player finished (hand empty)
+  const prevFinish = pr.finishOrder?.length || 0;
+  const currFinish = cr.finishOrder?.length || 0;
+  for (let i = prevFinish; i < currFinish; i++) {
+    showFinishToast(cr.finishOrder[i], i + 1);
+  }
+
+  // Trick won: pastTricks grew
   if (currPast > prevPast) {
     const wonTrick = cr.pastTricks[currPast - 1];
     const pts = calcCardPoints(wonTrick.cards || []);
-    const winnerId = wonTrick.givenTo || wonTrick.winnerId;
-    showTrickWonToast(winnerId, pts);
+    if (wonTrick.givenTo) {
+      showDragonGiveToast(wonTrick.winnerId, wonTrick.givenTo, pts);
+    } else {
+      showTrickWonToast(wonTrick.winnerId, pts);
+    }
   }
 }
 
@@ -817,6 +878,31 @@ function showTrickWonToast(winnerId, pts) {
     : `${name} 먹음`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 1800);
+}
+
+function showDogToast(newLeadId) {
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast dog-toast';
+  toast.textContent = `🐶 → ${getPlayerName(newLeadId)} 선공권`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1800);
+}
+
+function showFinishToast(playerId, place) {
+  const medals = ['🥇','🥈','🥉','4등'];
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast finish-toast';
+  toast.textContent = `${medals[place - 1] || place + '등'} ${getPlayerName(playerId)} 완주!`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
+}
+
+function showDragonGiveToast(winnerId, givenToId, pts) {
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast dragon-give-toast';
+  toast.textContent = `🐉 ${getPlayerName(winnerId)} → ${getPlayerName(givenToId)}에게 (${pts > 0 ? '+' : ''}${pts}점)`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
 }
 
 // ── Playable highlight ──
