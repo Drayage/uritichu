@@ -153,14 +153,36 @@ function pass(gameState, playerId) {
 function handleDog(gameState, playerId) {
   const r = gameState.currentRound;
   const p = gameState.players.find(x => x.id === playerId);
-  const partnerSeat = (p.seat + 2) % 4;
-  let partner = gameState.players.find(x => x.seat === partnerSeat);
-  if (r.finishOrder.includes(partner.id)) {
-    const rightSeat = (partnerSeat + 1) % 4;
-    partner = gameState.players.find(x => x.seat === rightSeat);
+
+  // Dog played as last card: player finishes before lead transfer
+  if (r.hands[playerId].length === 0 && !r.finishOrder.includes(playerId)) {
+    r.finishOrder.push(playerId);
   }
+
   r.currentTrick = null;
   r.passCount = 0;
+
+  // One-two: dog was 2nd finisher completing same-team pair
+  if (r.finishOrder.length === 2) {
+    const fp1 = gameState.players.find(pl => pl.id === r.finishOrder[0]);
+    const fp2 = gameState.players.find(pl => pl.id === r.finishOrder[1]);
+    if (fp1 && fp2 && fp1.teamIndex === fp2.teamIndex) return endRound(gameState);
+  }
+
+  if (r.finishOrder.length >= 3) return endRound(gameState);
+
+  // Find partner or nearest non-finished player going clockwise from partner seat
+  const partnerSeat = (p.seat + 2) % 4;
+  let partner = null;
+  for (let i = 0; i < 4; i++) {
+    const seat = (partnerSeat + i) % 4;
+    if (seat === p.seat) continue;
+    const candidate = gameState.players.find(x => x.seat === seat);
+    if (candidate && !r.finishOrder.includes(candidate.id)) { partner = candidate; break; }
+  }
+
+  if (!partner) return endRound(gameState);
+
   r.leadPlayerId = partner.id;
   r.activePlayerId = partner.id;
   return { ok: true, dog: true, newLead: partner.id };
