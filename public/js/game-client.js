@@ -9,6 +9,7 @@ let players = [];
 let myHand = [];
 let selectedIds = new Set();
 let currentGs = null;
+let prevGs = null;
 let exchangeSelection = { left: null, across: null, right: null };
 let exchangePhase = false;
 let lastRoundPhase = null;
@@ -47,6 +48,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!gs || !gs.currentRound) return;
+
+    // Detect pass/play events from state diff
+    if (prevGs?.currentRound && gs.currentRound) detectStateEffects(prevGs, gs);
+    prevGs = gs;
 
     currentGs = gs;
     const me = players.find(p => p.id === myPlayerId);
@@ -416,12 +421,14 @@ function updateHandCounts(counts) {
     const handEl = document.getElementById(`hand-${zone}`);
     if (handEl) {
       handEl.innerHTML = '';
-      const show = Math.min(count, 5);
+      const isSide = zone === 'west' || zone === 'east';
+      const maxShow = isSide ? 3 : 5;
+      const show = Math.min(count, maxShow);
       for (let i = 0; i < show; i++) handEl.appendChild(createCardBack());
-      if (count > 5) {
+      if (count > maxShow) {
         const more = document.createElement('span');
-        more.style.cssText = 'font-size:12px;color:var(--text-light);margin-left:4px;align-self:center;';
-        more.textContent = `+${count - 5}`;
+        more.style.cssText = `font-size:11px;color:var(--text-light);${isSide?'':'margin-left:4px;'}align-self:center;text-align:center;`;
+        more.textContent = `+${count - maxShow}`;
         handEl.appendChild(more);
       }
     }
@@ -699,6 +706,69 @@ function showGameOverModal(winningTeam, totalScores) {
   `;
   showModal('modal-game-over');
 }
+
+// ── Effects ──
+function detectStateEffects(prev, curr) {
+  const pr = prev.currentRound;
+  const cr = curr.currentRound;
+  if (!pr || !cr || pr.phase !== 'play' || cr.phase !== 'play') return;
+
+  // Detect pass: passCount went up
+  if (cr.passCount > pr.passCount && pr.activePlayerId) {
+    showPassEffect(pr.activePlayerId);
+  }
+
+  // Detect play: trick changed and it's a new play
+  if (cr.currentTrick && pr.currentTrick) {
+    const prevLen = pr.currentTrick.plays?.length || 0;
+    const currLen = cr.currentTrick.plays?.length || 0;
+    if (currLen > prevLen) {
+      const lastPlay = cr.currentTrick.plays[currLen - 1];
+      if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
+    }
+  } else if (cr.currentTrick && !pr.currentTrick && cr.currentTrick.plays?.length) {
+    const lastPlay = cr.currentTrick.plays[0];
+    if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
+  }
+}
+
+function _getZoneEl(playerId) {
+  if (playerId === myPlayerId) return document.getElementById('hand-area');
+  const p = players.find(x => x.id === playerId);
+  if (!p) return null;
+  const zone = getZoneForSeat(p.seat);
+  return document.getElementById(`zone-${zone}`);
+}
+
+function showPassEffect(playerId) {
+  const target = _getZoneEl(playerId);
+  const toast = document.createElement('div');
+  toast.className = 'pass-toast';
+  toast.textContent = `${getPlayerName(playerId)} 패스`;
+  if (target) {
+    const rect = target.getBoundingClientRect();
+    toast.style.left = `${rect.left + rect.width / 2}px`;
+    toast.style.top = `${rect.top + rect.height / 2}px`;
+  } else {
+    toast.style.left = '50%'; toast.style.top = '50%';
+  }
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 1400);
+}
+
+function showPlayEffect(playerId) {
+  const target = _getZoneEl(playerId);
+  if (!target) return;
+  const flash = document.createElement('div');
+  flash.className = 'play-flash';
+  target.appendChild(flash);
+  setTimeout(() => flash.remove(), 600);
+}
+
+function showSurrenderModal() {
+  showModal('modal-surrender');
+}
+window._showSurrenderModal = showSurrenderModal;
 
 // ── Utils ──
 function showModal(id) { document.getElementById(id).style.display = 'flex'; }
