@@ -2,6 +2,7 @@ import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
+import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -136,6 +137,12 @@ function handlePhaseChange(phase, gs, r) {
     showReceivedCards(r);
     log('게임 시작!');
   }
+  if (phase === PHASE.PLAY) {
+    startBgMusic();
+  }
+  if (phase === PHASE.ROUND_OVER || phase === PHASE.GAME_OVER) {
+    stopBgMusic();
+  }
 }
 
 // ── Button Listeners ──
@@ -193,6 +200,7 @@ async function doPlay(wishRank) {
   const result = playCards(gs, myPlayerId, combo, wishRank);
   if (result.error) { setStatus(`⚠️ ${result.error}`); return; }
   selectedIds.clear();
+  sfxCard();
   await saveGameState(myRoomId, gs);
 }
 
@@ -239,6 +247,11 @@ function setSortMode(mode) {
 window._setSortMode = setSortMode;
 window._showBombModal = showBombModal;
 window._hideModal = hideModal;
+window._toggleMute = () => {
+  const muted = toggleMute();
+  const btn = document.getElementById('btn-mute');
+  if (btn) btn.textContent = muted ? '🔇' : '🔊';
+};
 
 function renderSortBar(target) {
   const bar = document.createElement('div');
@@ -331,7 +344,7 @@ function comboLabel(combo) {
     single: `단장 ${r}`,
     pair: `페어 ${r}`,
     triple: `트리플 ${r}`,
-    steps: `연속페어 ${combo.length}장`,
+    steps: `연속페어 ${combo.length}장 (최고 ${r})`,
     fullhouse: `풀하우스 (${r} 트리플)`,
     straight: `스트레이트 ${combo.length}장`,
     bomb_quad: `💣 포카드 ${r}`,
@@ -571,6 +584,7 @@ function showBombModal() {
       const gs = JSON.parse(JSON.stringify(currentGs));
       const result = playCards(gs, myPlayerId, bomb, null);
       if (result.error) { setStatus(`⚠️ ${result.error}`); return; }
+      sfxBomb();
       selectedIds.clear();
       await saveGameState(myRoomId, gs);
     });
@@ -736,6 +750,7 @@ function showDragonModal() {
 }
 
 function showRoundOverModal(r, totalScores) {
+  sfxRoundOver();
   const el = document.getElementById('round-result');
   const placeEmoji = ['🥇','🥈','🥉','4등'];
   const teamLabel = (t) => t === 0 ? '🌿 팀 A' : '💜 팀 B';
@@ -770,10 +785,18 @@ function showRoundOverModal(r, totalScores) {
       notes += `<div class="result-note">💀 꼴등 손패점수 <b>${lastHandPts}점</b> → ${teamLabel(oppTeam)}</div>`;
   }
 
+  let deltaHtml = '';
+  if (r.scoreDeltas) {
+    const d0 = r.scoreDeltas.team0;
+    const d1 = r.scoreDeltas.team1;
+    deltaHtml = `<div class="round-delta">이번 라운드: <span class="round-delta-val team-a-text">${d0 >= 0 ? '+' : ''}${d0}점</span> <span class="round-delta-sep">vs</span> <span class="round-delta-val team-b-text">${d1 >= 0 ? '+' : ''}${d1}점</span></div>`;
+  }
+
   el.innerHTML = `
     <div class="result-header">개인 획득 트릭점수</div>
     ${finishRows}
     ${notes ? `<div class="result-notes">${notes}</div>` : ''}
+    ${deltaHtml}
     <div class="result-total">🌿 팀 A <b>${totalScores.team0}점</b> &nbsp;·&nbsp; 💜 팀 B <b>${totalScores.team1}점</b></div>
   `;
   showModal('modal-round-over');
@@ -807,39 +830,45 @@ function detectStateEffects(prev, curr) {
     showDogToast(cr.leadPlayerId);
   }
 
-  // Detect pass: passCount went up
+  // Detect pass: passCount went up (regular pass — last pass is handled in trick-won block)
   if (cr.passCount > pr.passCount && pr.activePlayerId) {
     showPassEffect(pr.activePlayerId);
-  }
-
-  // Detect play: trick changed and it's a new play
-  if (cr.currentTrick && pr.currentTrick) {
-    const prevLen = pr.currentTrick.plays?.length || 0;
-    const currLen = cr.currentTrick.plays?.length || 0;
-    if (currLen > prevLen) {
-      const lastPlay = cr.currentTrick.plays[currLen - 1];
-      if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
-    }
-  } else if (cr.currentTrick && !pr.currentTrick && cr.currentTrick.plays?.length) {
-    const lastPlay = cr.currentTrick.plays[0];
-    if (lastPlay.playerId !== myPlayerId) showPlayEffect(lastPlay.playerId);
   }
 
   // Player finished (hand empty)
   const prevFinish = pr.finishOrder?.length || 0;
   const currFinish = cr.finishOrder?.length || 0;
   for (let i = prevFinish; i < currFinish; i++) {
-    showFinishToast(cr.finishOrder[i], i + 1);
+    const pid = cr.finishOrder[i];
+    const place = i + 1;
+    const calledGrand = cr.grandTichuCalls?.[pid] === true;
+    const calledTichu = cr.tichuCalls?.[pid] === true;
+    if (place === 1 && (calledGrand || calledTichu)) {
+      showTichuSuccessToast(pid, calledGrand);
+      sfxTichu(calledGrand);
+      setTimeout(() => showFinishToast(pid, place), 700);
+    } else {
+      showFinishToast(pid, place);
+    }
   }
 
   // Trick won: pastTricks grew
   if (currPast > prevPast) {
     const wonTrick = cr.pastTricks[currPast - 1];
     const pts = calcCardPoints(wonTrick.cards || []);
-    if (wonTrick.givenTo) {
-      showDragonGiveToast(wonTrick.winnerId, wonTrick.givenTo, pts);
+    // Detect last pass: trick ended by passing (no new play added since prev state)
+    const prevPlaysLen = pr.currentTrick?.plays?.length ?? 0;
+    const wonPlaysLen = wonTrick.plays?.length ?? 0;
+    const endedByPass = wonPlaysLen === prevPlaysLen && pr.activePlayerId;
+    if (endedByPass) {
+      showPassEffect(pr.activePlayerId);
+      setTimeout(() => {
+        if (wonTrick.givenTo) showDragonGiveToast(wonTrick.winnerId, wonTrick.givenTo, pts);
+        else showTrickWonToast(wonTrick.winnerId, pts);
+      }, 650);
     } else {
-      showTrickWonToast(wonTrick.winnerId, pts);
+      if (wonTrick.givenTo) showDragonGiveToast(wonTrick.winnerId, wonTrick.givenTo, pts);
+      else showTrickWonToast(wonTrick.winnerId, pts);
     }
   }
 }
@@ -853,6 +882,7 @@ function _getZoneEl(playerId) {
 }
 
 function showPassEffect(playerId) {
+  sfxPass();
   const target = _getZoneEl(playerId);
   const toast = document.createElement('div');
   toast.className = 'pass-toast';
@@ -899,6 +929,7 @@ function updateTrickPoints(r) {
 }
 
 function showTrickWonToast(winnerId, pts) {
+  sfxTrickWon();
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast';
   const name = getPlayerName(winnerId);
@@ -918,6 +949,7 @@ function showDogToast(newLeadId) {
 }
 
 function showFinishToast(playerId, place) {
+  sfxFinish(place);
   const medals = ['🥇','🥈','🥉','4등'];
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast finish-toast';
@@ -927,11 +959,22 @@ function showFinishToast(playerId, place) {
 }
 
 function showDragonGiveToast(winnerId, givenToId, pts) {
+  sfxDragon();
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast dragon-give-toast';
   toast.textContent = `🐉 ${getPlayerName(winnerId)} → ${getPlayerName(givenToId)}에게 (${pts > 0 ? '+' : ''}${pts}점)`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2500);
+}
+
+function showTichuSuccessToast(playerId, isGrand) {
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast tichu-success-toast';
+  toast.textContent = isGrand
+    ? `👑 라지티츄 성공! ${getPlayerName(playerId)}`
+    : `🎯 티츄 성공! ${getPlayerName(playerId)}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
 }
 
 // ── Playable highlight ──
