@@ -469,6 +469,117 @@ body { overflow: hidden; height: 100vh; }
 
 .rank-btn:hover { background: var(--lavender); border-color: var(--lavender-dark); color: white; }
 
+/* ── Combo hint ── */
+.combo-hint {
+  min-height: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.hint-valid   { color: #2a8c6a; }
+.hint-invalid { color: #c0392b; }
+.hint-name    { color: var(--lavender-dark); margin-right: 4px; }
+.hint-desc    { color: var(--text-light); font-weight: 400; font-size: 11px; }
+
+/* ── Trick combo label ── */
+.trick-combo-label {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--lavender-dark);
+  background: rgba(201,184,245,0.25);
+  border-radius: 50px;
+  padding: 2px 10px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.trick-who {
+  text-align: center;
+  font-size: 10px;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+/* ── Ghost button ── */
+.btn-ghost {
+  background: transparent;
+  border: 2px solid var(--lavender);
+  color: var(--lavender-dark);
+  font-weight: 700;
+  border-radius: 50px;
+  transition: all 0.15s;
+}
+.btn-ghost:hover { background: var(--lavender); color: white; }
+
+/* ── Rules modal ── */
+.rules-section {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-light);
+  margin: 16px 0 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(201,184,245,0.3);
+}
+
+.rules-card-list { display: flex; flex-direction: column; gap: 8px; }
+
+.rules-card-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.rules-card-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid;
+}
+
+.special-mahjong-bg { background: linear-gradient(160deg,#f0fff8,#e0f8f0); border-color: #5ec8a8; }
+.special-dog-bg     { background: linear-gradient(160deg,#f0f4ff,#e8ecff); border-color: #a0b0ff; }
+.special-phoenix-bg { background: linear-gradient(160deg,#fff0f8,#ffe0ef); border-color: #ff79a8; }
+.special-dragon-bg  { background: linear-gradient(160deg,#fff8e0,#fff0b0); border-color: #ffb700; }
+
+.rules-combo-list { display: flex; flex-direction: column; gap: 5px; }
+
+.rules-combo-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.rules-combo-tag {
+  background: rgba(201,184,245,0.3);
+  color: var(--lavender-dark);
+  border-radius: 50px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.rules-combo-tag.bomb { background: rgba(255,180,0,0.2); color: #a06000; }
+.rules-combo-tag.pts  { background: rgba(178,240,224,0.4); color: #2a8c6a; }
+.rules-combo-tag.neg  { background: rgba(255,100,100,0.15); color: #c0392b; }
+
 /* ── Finish order badges ── */
 .finish-badge {
   display: inline-block;
