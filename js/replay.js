@@ -1,7 +1,7 @@
 // ── Replay Recording & Viewing ──
 
 const STORAGE_KEY = 'tichu_replays';
-const MAX_GAMES = 10;
+const MAX_GAMES = 5;
 
 let _rec = null;
 let _viewGame = null;

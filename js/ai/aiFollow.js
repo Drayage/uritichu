@@ -24,6 +24,11 @@ function decideFollow(hand, roundState, myId, players) {
   const nonBombs = validMoves.filter(m => !m.isBomb);
   const bombs    = validMoves.filter(m => m.isBomb);
 
+  // When wish is active and we have wish-satisfying non-bomb moves, we MUST play one.
+  const hasWishedCard = (m) => m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank));
+  const wishObligated = !!(wishRank && nonBombs.some(hasWishedCard));
+  const wishMoves = wishObligated ? nonBombs.filter(hasWishedCard) : [];
+
   // Does any unfinished opponent have tichu/grand tichu called?
   const opponentTichu = players.some(p =>
     p.teamIndex !== myTeam &&
@@ -43,6 +48,11 @@ function decideFollow(hand, roundState, myId, players) {
 
   // ── Partner winning ──
   if (partnerWinning && !dragonInTrick) {
+    // Must play wish even if partner is winning
+    if (wishObligated) {
+      wishMoves.sort((a, b) => a.rank - b.rank);
+      return wishMoves[0];
+    }
     // Save cards — partner takes this trick for the team.
     // Exception: use lowest bomb if opponent has tichu and trick has value
     if (opponentTichu && bombs.length > 0 && trickPts >= 10) {
@@ -58,8 +68,10 @@ function decideFollow(hand, roundState, myId, players) {
   // Try hard to steal the trick — use any non-bomb, or even a bomb.
   if (partnerHasTichu && opponentNearDone) {
     if (nonBombs.length > 0) {
-      nonBombs.sort((a, b) => a.rank - b.rank);
-      return nonBombs[0];
+      // Prefer wish move if obligated, else lowest non-bomb
+      const pool = wishObligated ? wishMoves : nonBombs;
+      pool.sort((a, b) => a.rank - b.rank);
+      return pool[0];
     }
     if (bombs.length > 0) {
       bombs.sort((a, b) => a.rank - b.rank);
@@ -69,6 +81,11 @@ function decideFollow(hand, roundState, myId, players) {
   }
 
   if (nonBombs.length > 0) {
+    // If wish-obligated, play lowest wish-satisfying move
+    if (wishObligated) {
+      wishMoves.sort((a, b) => a.rank - b.rank);
+      return wishMoves[0];
+    }
     // Don't waste 3+ card combos on a 0-point trick with no threat
     if (trickPts === 0 && !opponentTichu && !dragonInTrick) {
       const cheap = nonBombs.filter(m => m.length <= 2);
