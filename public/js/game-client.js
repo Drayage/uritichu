@@ -1092,9 +1092,13 @@ function updatePlayableHighlight(currentTrick) {
   const r = currentGs?.currentRound;
   const wishRank = r?.wishRank || null;
 
-  // Lead turn with wish: highlight only wish-satisfying cards
+  // Lead turn: highlight all cards (or wish-satisfying only if wish active)
   if (!currentTrick || !currentTrick.winningCombo) {
-    if (!wishRank) return;
+    if (!wishRank) {
+      document.querySelectorAll('#my-hand .card').forEach(el => el.classList.add('playable'));
+      return;
+    }
+    // Wish active: highlight only cards belonging to wish-satisfying combos
     const wishMoves = getValidMoves(myHand, null, wishRank).filter(m =>
       m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank))
     );
