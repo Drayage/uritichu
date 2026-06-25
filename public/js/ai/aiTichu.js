@@ -58,7 +58,11 @@ function handStrength14(hand) {
   return score;
 }
 
-function shouldCallGrandTichu(hand8) { return handStrength8(hand8) >= 10; }
-function shouldCallTichu(hand14)     { return handStrength14(hand14) >= 16; }
+function shouldCallGrandTichu(hand8, partnerCalledGT = false) {
+  return handStrength8(hand8) >= (partnerCalledGT ? 15 : 10);
+}
+function shouldCallTichu(hand14, partnerHasTichu = false) {
+  return handStrength14(hand14) >= (partnerHasTichu ? 22 : 16);
+}
 
 export { shouldCallGrandTichu, shouldCallTichu };

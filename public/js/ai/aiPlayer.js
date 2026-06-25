@@ -14,9 +14,14 @@ function decideAction(gameState, playerId) {
   const p = gameState.players.find(x => x.id === playerId);
   const hand = r.hands[playerId] || [];
 
+  // Partner context (used for tichu thresholds)
+  const partnerSeat = (p.seat + 2) % 4;
+  const partnerId = gameState.players.find(x => x.seat === partnerSeat)?.id;
+
   if (r.phase === 'deal_8' || r.phase === 'grand_tichu') {
     if (r.grandTichuCalls[playerId] === null || r.grandTichuCalls[playerId] === undefined) {
-      return { action: 'grandTichu', data: { call: shouldCallGrandTichu(hand) } };
+      const partnerCalledGT = !!(partnerId && r.grandTichuCalls?.[partnerId] === true);
+      return { action: 'grandTichu', data: { call: shouldCallGrandTichu(hand, partnerCalledGT) } };
     }
   }
   if (r.phase === 'exchange') {
@@ -26,7 +31,9 @@ function decideAction(gameState, playerId) {
   }
   if (r.phase === 'play') {
     if (!r.tichuPlayed[playerId] && (r.tichuCalls[playerId] === null || r.tichuCalls[playerId] === undefined)) {
-      if (shouldCallTichu(hand)) return { action: 'tichu', data: {} };
+      const partnerHasTichu = !!(partnerId &&
+        (r.grandTichuCalls?.[partnerId] === true || r.tichuCalls?.[partnerId] === true));
+      if (shouldCallTichu(hand, partnerHasTichu)) return { action: 'tichu', data: {} };
     }
     if (r.activePlayerId !== playerId) return null;
     if (!r.currentTrick || r.currentTrick.plays.length === 0) {
