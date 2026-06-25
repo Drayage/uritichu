@@ -3,7 +3,7 @@ import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
-import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame, openReplayModal, closeReplayModal, replayPrev, replayNext, replayBackToList } from './replay.js';
+import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame } from './replay.js';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -90,10 +90,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateFinishBadges(r.finishOrder);
     renderTrick(r.currentTrick);
 
-    // Show speed button when all humans have finished (only AI remain)
+    // Show speed button when there are AI players (host only)
     if (r.phase === PHASE.PLAY && isHost) {
-      const humansDone = players.filter(p => !p.isAI).every(p => r.finishOrder.includes(p.id));
-      document.getElementById('btn-speed').style.display = humansDone ? '' : 'none';
+      const hasAI = players.some(p => p.isAI);
+      document.getElementById('btn-speed').style.display = hasAI ? '' : 'none';
     } else {
       document.getElementById('btn-speed').style.display = 'none';
     }
@@ -137,6 +137,13 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function handlePhaseChange(phase, gs, r) {
   if (phase === PHASE.DEAL_8 || phase === PHASE.GRAND_TICHU) {
+    // Reset speed mode at start of each round
+    if (_aiFastMode) {
+      _aiFastMode = false;
+      setAIFastMode(false);
+      const btn = document.getElementById('btn-speed');
+      if (btn) { btn.textContent = '▶▶ 배속'; btn.classList.remove('active'); }
+    }
     setupPlayerZones();
     const me = gs.players.find(p => p.id === myPlayerId);
     if (me && !me.isAI) {
@@ -149,7 +156,7 @@ function handlePhaseChange(phase, gs, r) {
     hideModal('modal-grand-tichu');
     myHand = r.hands[myPlayerId] || [];
     const me = gs.players.find(p => p.id === myPlayerId);
-    if (me && !me.isAI) showExchangeModal();
+    if (me && !me.isAI) showExchangeModal(gs, r);
     log('카드 교환 시간!');
   }
   if (phase === PHASE.PLAY && lastRoundPhase === PHASE.EXCHANGE) {
@@ -654,10 +661,23 @@ function showGrandTichuModal(hand8) {
   document.getElementById('modal-grand-tichu')._timer = interval;
 }
 
-function showExchangeModal() {
+function showExchangeModal(gs, r) {
   exchangePhase = true;
   exchangeSelection = { left: null, across: null, right: null };
   _lastExchangeCard = null;
+
+  // Show who called grand tichu
+  const gtInfo = document.getElementById('exchange-grand-tichu-info');
+  if (gtInfo && r?.grandTichuCalls) {
+    const callers = players.filter(p => r.grandTichuCalls[p.id] === true).map(p => `👑 ${p.name}`);
+    if (callers.length > 0) {
+      gtInfo.textContent = `라지티츄: ${callers.join(', ')}`;
+      gtInfo.style.display = '';
+    } else {
+      gtInfo.style.display = 'none';
+    }
+  }
+
   const slots = document.getElementById('exchange-slots');
   slots.innerHTML = '';
   const dirs = [{ key: 'left', label: '왼쪽 상대' }, { key: 'across', label: '파트너' }, { key: 'right', label: '오른쪽 상대' }];
@@ -861,7 +881,16 @@ function showGameOverModal(winningTeam, totalScores) {
 function detectStateEffects(prev, curr) {
   const pr = prev.currentRound;
   const cr = curr.currentRound;
-  if (!pr || !cr || pr.phase !== 'play') return;
+  if (!pr || !cr) return;
+
+  // Detect new tichu/grand tichu calls (any phase)
+  for (const p of players) {
+    const pid = p.id;
+    if (!pr.tichuCalls?.[pid] && cr.tichuCalls?.[pid] === true) showTichuCallToast(pid, false);
+    if (!pr.grandTichuCalls?.[pid] && cr.grandTichuCalls?.[pid] === true) showTichuCallToast(pid, true);
+  }
+
+  if (pr.phase !== 'play') return;
 
   const prevPast = pr.pastTricks?.length || 0;
   const currPast = cr.pastTricks?.length || 0;
@@ -959,11 +988,6 @@ window._toggleAISpeed = () => {
   const btn = document.getElementById('btn-speed');
   if (btn) { btn.textContent = _aiFastMode ? '⏩ 배속' : '▶▶ 배속'; btn.classList.toggle('active', _aiFastMode); }
 };
-window._openReplayModal = openReplayModal;
-window._closeReplayModal = closeReplayModal;
-window._replayPrev = replayPrev;
-window._replayNext = replayNext;
-window._replayBackToList = replayBackToList;
 
 // ── Trick points helpers ──
 function calcCardPoints(cards) {
@@ -1028,6 +1052,19 @@ function showTichuSuccessToast(playerId, isGrand) {
     : `🎯 티츄 성공! ${getPlayerName(playerId)}`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3200);
+}
+
+function showTichuCallToast(playerId, isGrand) {
+  sfxTichu(isGrand);
+  const toast = document.createElement('div');
+  toast.className = isGrand
+    ? 'trick-won-toast tichu-call-toast grand-tichu-call-toast'
+    : 'trick-won-toast tichu-call-toast';
+  toast.textContent = isGrand
+    ? `👑 ${getPlayerName(playerId)} 라지티츄 선언!`
+    : `🎯 ${getPlayerName(playerId)} 티츄 선언!`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
 }
 
 // ── Playable highlight ──

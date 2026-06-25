@@ -419,4 +419,4 @@ function getFullHouses(hand) {
   return results;
 }
 
-export { detectCombination, canBeat, getValidMoves, phoenixSingleRank, getBombs, getStraights, getSteps, getFullHouses, TYPE };
+export { detectCombination, canBeat, getValidMoves, getAllCombinations, phoenixSingleRank, getBombs, getStraights, getSteps, getFullHouses, TYPE };

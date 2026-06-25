@@ -20,7 +20,6 @@
         <button class="btn btn-secondary" id="btn-tichu" style="display:none; font-size:13px; padding:8px 14px;">티츄!</button>
         <button class="btn btn-ghost btn-mute" id="btn-mute" style="font-size:13px; padding:6px 12px;" onclick="window._toggleMute()">🔊</button>
         <button class="btn btn-ghost" id="btn-speed" style="font-size:13px; padding:6px 12px; display:none;" onclick="window._toggleAISpeed()">▶▶ 배속</button>
-        <button class="btn btn-ghost" style="font-size:13px; padding:6px 12px;" onclick="window._openReplayModal()">📼 기록</button>
         <button class="btn btn-ghost" id="btn-rules" style="font-size:13px; padding:6px 12px;" onclick="document.getElementById('modal-rules').style.display='flex'">❓ 룰</button>
         <button class="btn btn-ghost btn-surrender" style="font-size:13px; padding:6px 12px;" onclick="window._showSurrenderModal()">🏳️</button>
       </div>
@@ -144,6 +143,7 @@
           <button class="sort-btn"        data-sort="suit" onclick="window._setSortMode('suit')">모양순</button>
         </div>
       </div>
+      <div id="exchange-grand-tichu-info" style="font-size:13px; color:#c8900a; margin:6px 0 4px; text-align:center; display:none;"></div>
       <div id="exchange-hand" class="modal-hand"></div>
       <div id="exchange-status" style="font-size:13px; color:var(--text-light); margin-bottom:12px;"></div>
       <button class="btn btn-primary btn-full" id="btn-exchange-confirm" disabled>✅ 교환 완료</button>
@@ -287,34 +287,6 @@
     </div>
   </div>
 
-  <!-- Replay Modal -->
-  <div class="modal-overlay" id="modal-replay" style="display:none;" onclick="if(event.target===this)window._closeReplayModal()">
-    <div class="modal replay-modal">
-      <div class="replay-modal-header">
-        <span class="replay-modal-title">📼 게임 기록</span>
-        <button class="replay-close-btn" onclick="window._closeReplayModal()">✕</button>
-      </div>
-
-      <!-- List view -->
-      <div id="replay-list-view">
-        <div id="replay-game-list"></div>
-      </div>
-
-      <!-- Detail view -->
-      <div id="replay-detail-view" style="display:none">
-        <div class="replay-detail-top">
-          <button class="replay-back-btn" onclick="window._replayBackToList()">← 목록</button>
-          <div id="replay-round-tabs" class="replay-round-tabs"></div>
-        </div>
-        <div class="replay-nav-bar">
-          <button id="replay-prev" class="replay-nav-btn" onclick="window._replayPrev()">◀</button>
-          <span id="replay-trick-pos" class="replay-pos-label"></span>
-          <button id="replay-next" class="replay-nav-btn" onclick="window._replayNext()">▶</button>
-        </div>
-        <div id="replay-trick-display" class="replay-trick-display"></div>
-      </div>
-    </div>
-  </div>
 
   <script type="module" src="js/game-client.js"></script>
 </body>

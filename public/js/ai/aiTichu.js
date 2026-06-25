@@ -55,6 +55,22 @@ function handStrength14(hand) {
   }
   if (maxRun >= 5) score += maxRun - 2;  // +3 for 5-card run, +4 for 6-card, etc.
 
+  // Lead control: count how many times we can reliably grab the lead.
+  // Tichu requires enough lead control to be first out consistently.
+  let leadControl = 0;
+  for (const cnt of Object.values(counts)) if (cnt >= 4) leadControl += 6; // bomb
+  if (hand.some(c => c.rank === 'mahjong')) leadControl += 4; // guaranteed first lead
+  if (hand.some(c => c.rank === 'dragon'))  leadControl += 3;
+  if (hand.some(c => c.rank === 'phoenix')) leadControl += 2;
+  leadControl += hand.filter(c => c.rank === 'A').length * 1.5;
+  // Long straights give big multi-card clears when leading
+  if (maxRun >= 6) leadControl += 2;
+  else if (maxRun >= 5) leadControl += 1;
+
+  // Require at least 2 sure leads for tichu to be viable
+  if (leadControl < 2) score -= 6;
+  else if (leadControl >= 4) score += 3; // many lead opportunities = very good
+
   return score;
 }
 

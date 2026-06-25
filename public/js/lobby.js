@@ -1,4 +1,5 @@
 import { createRoom, joinRoom, addAI, removeAI, fillWithAI, listenRoom } from './room-manager.js';
+import { openReplayModal, closeReplayModal, replayPrev, replayNext, replayBackToList } from './replay.js';
 
 let myPlayerId = null;
 let myRoomId = null;
@@ -88,10 +89,16 @@ document.getElementById('btn-add-ai').addEventListener('click', async () => {
 // Start game
 document.getElementById('btn-start').addEventListener('click', () => {
   if (!myRoomId) return;
-  window.location.href = '/game.html';
+  window.location.href = './game.html';
 });
 
 // Copy room code
+document.getElementById('btn-replay').addEventListener('click', () => openReplayModal());
+window._closeReplayModal = closeReplayModal;
+window._replayPrev = replayPrev;
+window._replayNext = replayNext;
+window._replayBackToList = replayBackToList;
+
 document.getElementById('btn-copy').addEventListener('click', () => {
   const code = document.getElementById('room-code-display').textContent;
   navigator.clipboard.writeText(code).then(() => {
