@@ -225,6 +225,23 @@ async function doPlay(wishRank) {
   const combo = detectCombination(cards);
   if (!combo) { setStatus('⚠️ 낼 수 없는 패입니다'); return; }
   if (!currentGs) return;
+  const r = currentGs.currentRound;
+
+  // Enforce wish on lead turn: if wish is active and we can satisfy it, we must
+  const activeWish = r?.wishRank;
+  const isLeadTurn = !r?.currentTrick || r.currentTrick.plays.length === 0;
+  if (activeWish && isLeadTurn) {
+    const comboHasWish = combo.cards.some(c => c.rank === activeWish || String(c.numericValue) === String(activeWish));
+    if (!comboHasWish) {
+      const validMoves = getValidMoves(myHand, null, activeWish);
+      const canSatisfy = validMoves.some(m => m.cards.some(c => c.rank === activeWish || String(c.numericValue) === String(activeWish)));
+      if (canSatisfy) {
+        setStatus(`⚠️ 소원 숫자 ${activeWish}를 포함한 패를 내야 해요!`);
+        return;
+      }
+    }
+  }
+
   const gs = JSON.parse(JSON.stringify(currentGs));
   const result = playCards(gs, myPlayerId, combo, wishRank);
   if (result.error) { setStatus(`⚠️ ${result.error}`); return; }
@@ -1072,11 +1089,26 @@ function updatePlayableHighlight(currentTrick) {
   document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
   document.getElementById('btn-pass')?.classList.remove('pulse-hint');
 
-  // Lead turn: no trick to beat — don't highlight
-  if (!currentTrick || !currentTrick.winningCombo) return;
-
   const r = currentGs?.currentRound;
-  const validMoves = getValidMoves(myHand, currentTrick.winningCombo, r?.wishRank || null);
+  const wishRank = r?.wishRank || null;
+
+  // Lead turn with wish: highlight only wish-satisfying cards
+  if (!currentTrick || !currentTrick.winningCombo) {
+    if (!wishRank) return;
+    const wishMoves = getValidMoves(myHand, null, wishRank).filter(m =>
+      m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank))
+    );
+    if (wishMoves.length > 0) {
+      const playableIds = new Set();
+      for (const move of wishMoves) move.cards.forEach(c => playableIds.add(c.id));
+      document.querySelectorAll('#my-hand .card').forEach(el => {
+        if (playableIds.has(el.dataset.id)) el.classList.add('playable');
+      });
+    }
+    return;
+  }
+
+  const validMoves = getValidMoves(myHand, currentTrick.winningCombo, wishRank);
 
   if (validMoves.length === 0) {
     document.getElementById('btn-pass')?.classList.add('pulse-hint');
