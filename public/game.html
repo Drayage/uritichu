@@ -303,7 +303,18 @@
   <script type="module" src="js/game-client.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      // Auto-reload once when an updated service worker takes control, so
+      // code fixes actually reach the page without a manual double-refresh.
+      const hadController = !!navigator.serviceWorker.controller;
+      let refreshing = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (refreshing) return;
+        refreshing = true;
+        if (hadController) window.location.reload();
+      });
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => reg.update())
+        .catch(() => {});
     }
   </script>
 </body>
