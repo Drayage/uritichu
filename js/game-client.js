@@ -19,6 +19,8 @@ let sortMode = 'rank'; // 'rank' | 'suit'
 let _lastExchangeCard = null;
 let _replayActive = false;
 let _aiFastMode = false;
+let _lastTrickFirstPlayId = null;
+let _lastTrickPlaysLength = 0;
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -449,8 +451,23 @@ function updateSelectedInfo() {
 
 function renderTrick(trick) {
   const area = document.getElementById('trick-area');
+
+  if (!trick || !trick.plays || trick.plays.length === 0) {
+    area.innerHTML = '';
+    _lastTrickFirstPlayId = null;
+    _lastTrickPlaysLength = 0;
+    return;
+  }
+
+  // Detect whether the trick contents actually changed (vs just a pass incrementing passCount)
+  const firstPlayId = trick.plays[0]?.combination.cards.map(c => c.id).sort().join(',');
+  const isNewTrick = firstPlayId !== _lastTrickFirstPlayId;
+  const isNewPlay  = isNewTrick || trick.plays.length > _lastTrickPlaysLength;
+  _lastTrickFirstPlayId = firstPlayId;
+  _lastTrickPlaysLength = trick.plays.length;
+  if (!isNewPlay) return; // passCount changed but no new card play — skip re-render
+
   area.innerHTML = '';
-  if (!trick || !trick.plays || trick.plays.length === 0) return;
 
   // Who played (top)
   const who = document.createElement('div');
@@ -1214,10 +1231,53 @@ function showReceivedCards(r) {
     list.appendChild(item);
   }
   box.appendChild(list);
+
+  // Given cards section: what I sent to each player
+  const myGiven = r.exchangeCards[myPlayerId];
+  if (myGiven) {
+    const givenTargets = [
+      { relSeat: (seat + 1) % 4, key: 'left',   label: '왼쪽' },
+      { relSeat: (seat + 2) % 4, key: 'across',  label: '파트너' },
+      { relSeat: (seat + 3) % 4, key: 'right',   label: '오른쪽' },
+    ];
+    const givenCards = givenTargets.map(({ relSeat, key, label }) => {
+      const recipient = players.find(p => p.seat === relSeat);
+      if (!recipient) return null;
+      const card = myGiven[key];
+      if (!card) return null;
+      return { card, recipientName: recipient.name, label };
+    }).filter(Boolean);
+
+    if (givenCards.length > 0) {
+      const divider = document.createElement('div');
+      divider.className = 'received-divider';
+      box.appendChild(divider);
+
+      const givenTitle = document.createElement('div');
+      givenTitle.className = 'received-title';
+      givenTitle.textContent = '준 카드 🤝';
+      box.appendChild(givenTitle);
+
+      const givenList = document.createElement('div');
+      givenList.className = 'received-list';
+      for (const { card, recipientName, label } of givenCards) {
+        const item = document.createElement('div');
+        item.className = 'received-item';
+        const to = document.createElement('div');
+        to.className = 'received-from';
+        to.textContent = `${label} · ${escHtml(recipientName)}`;
+        item.appendChild(to);
+        item.appendChild(createCardEl(card));
+        givenList.appendChild(item);
+      }
+      box.appendChild(givenList);
+    }
+  }
+
   overlay.appendChild(box);
   document.body.appendChild(overlay);
 
-  setTimeout(() => overlay.remove(), 3500);
+  setTimeout(() => overlay.remove(), 4500);
 }
 
 // ── Utils ──

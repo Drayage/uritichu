@@ -1,7 +1,7 @@
 import { createDeck, shuffleDeck, dealCards } from './cards.js';
 import { applyExchanges } from './exchange.js';
 import { scoreRound } from './scoring.js';
-import { canBeat, phoenixSingleRank } from './combinations.js';
+import { canBeat, phoenixSingleRank, getValidMoves } from './combinations.js';
 
 const PHASE = {
   DEAL_8: 'deal_8', GRAND_TICHU: 'grand_tichu', DEAL_6: 'deal_6',
@@ -147,6 +147,16 @@ function pass(gameState, playerId) {
   if (r.phase !== PHASE.PLAY) return { error: 'wrong phase' };
   if (r.activePlayerId !== playerId) return { error: 'not your turn' };
   if (!r.currentTrick) return { error: 'cannot pass on lead' };
+
+  if (r.wishRank && r.currentTrick.winningCombo) {
+    const hand = r.hands[playerId] || [];
+    const validMoves = getValidMoves(hand, r.currentTrick.winningCombo, r.wishRank);
+    const mustPlay = validMoves.some(m => !m.isBomb &&
+      m.cards.some(c => c.rank === r.wishRank || String(c.numericValue) === String(r.wishRank))
+    );
+    if (mustPlay) return { error: `소원 숫자(${r.wishRank})를 포함한 족보를 내야 합니다` };
+  }
+
   r.passCount++;
   const stillIn = gameState.players.filter(p => !r.finishOrder.includes(p.id));
   if (r.passCount >= stillIn.length - 1) return endTrick(gameState);

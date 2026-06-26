@@ -1084,7 +1084,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   border-radius: 18px;
   padding: 16px 24px 18px;
   box-shadow: 0 8px 36px rgba(100,80,160,0.22);
-  animation: receivedFadeIn 0.3s ease-out, receivedFadeOut 0.5s ease-in 3s forwards;
+  animation: receivedFadeIn 0.3s ease-out, receivedFadeOut 0.5s ease-in 4s forwards;
 }
 .received-title {
   font-size: 14px;
@@ -1110,5 +1110,13 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   color: var(--text-light);
   text-align: center;
   white-space: nowrap;
+}
+.received-divider {
+  height: 1px;
+  background: rgba(180,160,220,0.35);
+  margin: 14px 0 12px;
+}
+.received-title + .received-list {
+  margin-bottom: 0;
 }
 
