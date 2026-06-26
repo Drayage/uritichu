@@ -159,7 +159,12 @@ function pass(gameState, playerId) {
 
   r.passCount++;
   const stillIn = gameState.players.filter(p => !r.finishOrder.includes(p.id));
-  if (r.passCount >= stillIn.length - 1) return endTrick(gameState);
+  // If the current trick winner has already gone out (played their last card),
+  // ALL remaining players must pass — not just (stillIn - 1).
+  const trickWinnerId = r.currentTrick?.winnerId;
+  const winnerIsOut = trickWinnerId && r.finishOrder.includes(trickWinnerId);
+  const passesNeeded = winnerIsOut ? stillIn.length : stillIn.length - 1;
+  if (r.passCount >= passesNeeded) return endTrick(gameState);
   return advanceTurn(gameState, playerId);
 }
 
