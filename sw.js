@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'uritichu-v1';
+const CACHE = 'uritichu-v2';
 
 const PRECACHE = [
   '/',
@@ -46,10 +46,11 @@ const BYPASS_HOSTS = [
 ];
 
 self.addEventListener('install', e => {
+  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE)
-      .then(c => c.addAll(PRECACHE))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE).then(c =>
+      Promise.allSettled(PRECACHE.map(url => c.add(url)))
+    )
   );
 });
 
