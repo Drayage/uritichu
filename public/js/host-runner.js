@@ -111,7 +111,7 @@ export async function onRoomStateChange(roomData, myId) {
         }
 
         await saveGameState(_roomId, fresh);
-      }, _fastMode ? 180 : 1500);
+      }, _fastMode ? 380 : 1500);
     } else {
       _clearWatchdog();
     }
