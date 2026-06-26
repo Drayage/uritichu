@@ -1235,7 +1235,7 @@ function showReceivedCards(r) {
     if (!sender) return null;
     const card = r.exchangeCards[sender.id]?.[key];
     if (!card) return null;
-    return { card, senderName: sender.name, label };
+    return { card, senderName: sender.name, senderAvatar: sender.avatar || '🙂', label };
   }).filter(Boolean);
 
   if (received.length === 0) return;
@@ -1253,14 +1253,19 @@ function showReceivedCards(r) {
 
   const list = document.createElement('div');
   list.className = 'received-list';
-  for (const { card, senderName, label } of received) {
+  for (const { card, senderName, senderAvatar, label } of received) {
     const item = document.createElement('div');
     item.className = 'received-item';
     const from = document.createElement('div');
     from.className = 'received-from';
     from.textContent = `${label} · ${escHtml(senderName)}`;
     item.appendChild(from);
-    item.appendChild(createCardEl(card));
+    const cardEl = createCardEl(card);
+    const badge = document.createElement('div');
+    badge.className = 'card-from';
+    badge.textContent = senderAvatar;
+    cardEl.appendChild(badge);
+    item.appendChild(cardEl);
     list.appendChild(item);
   }
   box.appendChild(list);
@@ -1278,7 +1283,7 @@ function showReceivedCards(r) {
       if (!recipient) return null;
       const card = myGiven[key];
       if (!card) return null;
-      return { card, recipientName: recipient.name, label };
+      return { card, recipientName: recipient.name, recipientAvatar: recipient.avatar || '🙂', label };
     }).filter(Boolean);
 
     if (givenCards.length > 0) {
@@ -1293,14 +1298,19 @@ function showReceivedCards(r) {
 
       const givenList = document.createElement('div');
       givenList.className = 'received-list';
-      for (const { card, recipientName, label } of givenCards) {
+      for (const { card, recipientName, recipientAvatar, label } of givenCards) {
         const item = document.createElement('div');
         item.className = 'received-item';
         const to = document.createElement('div');
         to.className = 'received-from';
         to.textContent = `${label} · ${escHtml(recipientName)}`;
         item.appendChild(to);
-        item.appendChild(createCardEl(card));
+        const cardEl = createCardEl(card);
+        const badge = document.createElement('div');
+        badge.className = 'card-from';
+        badge.textContent = recipientAvatar;
+        cardEl.appendChild(badge);
+        item.appendChild(cardEl);
         givenList.appendChild(item);
       }
       box.appendChild(givenList);
