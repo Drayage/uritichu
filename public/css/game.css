@@ -157,6 +157,23 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 .card-pts.neg { background: #c0392b; }
 
+/* Sender/recipient avatar badge — bottom-left of received/given cards */
+.card-from {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.92);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
 .card.suit-jade .card-rank-top,
 .card.suit-jade .card-rank-bot { color: #2eb87a; }
 .card.suit-sword .card-rank-top,
