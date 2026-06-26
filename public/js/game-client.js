@@ -260,7 +260,7 @@ async function onPass() {
   if (!currentGs) return;
   const gs = JSON.parse(JSON.stringify(currentGs));
   const result = pass(gs, myPlayerId);
-  if (result.error) { setStatus(`⚠️ ${result.error}`); return; }
+  if (result.error) { sfxError(); showWarnToast(`⭐ ${result.error}`); return; }
   selectedIds.clear();
   await saveGameState(myRoomId, gs);
 }
