@@ -146,7 +146,7 @@ function handlePhaseChange(phase, gs, r) {
       _aiFastMode = false;
       setAIFastMode(false);
       const btn = document.getElementById('btn-speed');
-      if (btn) { btn.textContent = '▶▶ 배속'; btn.classList.remove('active'); }
+      if (btn) { btn.textContent = '▶▶'; btn.classList.remove('active'); }
     }
     setupPlayerZones();
     const me = gs.players.find(p => p.id === myPlayerId);
