@@ -990,7 +990,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
     height: 100dvh;
     grid-template-columns: 1fr;
     grid-template-areas: "top-bar" "table" "hand";
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: 48px 1fr 258px;
   }
   #sidebar { display: none; }
 
@@ -1068,9 +1068,11 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   #trick-area { max-width: min(290px, 88vw); padding: 6px 8px; }
   .trick-play { max-width: min(270px, 84vw); }
 
-  /* Hand area: 2-row card layout, taller */
-  #hand-area { padding: 6px 8px 8px; min-height: 120px; max-height: 275px; gap: 5px; }
-  #my-hand { gap: 4px; max-height: 140px; overflow-y: hidden; flex-shrink: 0; }
+  /* Hand area: fixed height, buttons always visible */
+  #hand-area { padding: 6px 8px 8px; height: 100%; max-height: none; min-height: none; gap: 5px; overflow: hidden; }
+  #my-hand { gap: 4px; flex: 1; max-height: 142px; overflow-y: hidden; flex-shrink: 0; }
+  .hand-actions { flex-shrink: 0; }
+  #combo-hint { flex-shrink: 0; min-height: 0; }
 
   /* Cards in hand: bigger + 2 rows */
   .card { width: 46px; height: 65px; padding: 3px 2px; }
@@ -1099,11 +1101,12 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 
 @media (max-width: 380px) {
+  #game-root { grid-template-rows: 48px 1fr 232px; }
   .card { width: 40px; height: 57px; }
   .card-rank-top, .card-rank-bot { font-size: 9px; }
   .card-suit { font-size: 15px; }
   .card-back { width: 26px; height: 38px; font-size: 11px; }
-  #my-hand { max-height: 122px; }
+  #my-hand { max-height: 118px; }
 }
 
 /* ── Received cards overlay ── */
