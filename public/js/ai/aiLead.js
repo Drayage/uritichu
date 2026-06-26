@@ -4,8 +4,7 @@ import { getValidMoves, getAllCombinations } from '../engine/combinations.js';
 function minCombosNeeded(hand) {
   if (hand.length === 0) return 0;
   const moves = getAllCombinations(hand, null);
-  if (moves.length === 0) return hand.length; // each card stuck alone
-  // Greedy: pick biggest combo repeatedly
+  if (moves.length === 0) return hand.length;
   let remaining = [...hand];
   let count = 0;
   while (remaining.length > 0) {
@@ -22,10 +21,11 @@ function minCombosNeeded(hand) {
 
 // Score remaining hand quality after removing playedCards.
 // Lower is better (fewer isolated dead cards, fewer combos needed).
+// 0 = perfect (empty hand).
 function remainingHandScore(hand, playedCards) {
   const playedIds = new Set(playedCards.map(c => c.id));
   const rem = hand.filter(c => !playedIds.has(c.id));
-  if (rem.length === 0) return 1000; // best: empty hand
+  if (rem.length === 0) return 0; // best: empty hand
 
   const remCombos = getAllCombinations(rem, null);
   const inCombos = new Set();
@@ -37,12 +37,12 @@ function remainingHandScore(hand, playedCards) {
   for (const c of rem) {
     if (inCombos.has(c.id)) continue;
     if (c.rank === 'dog')      deadCardPenalty += 4;
-    else if (c.rank === 'mahjong') deadCardPenalty -= 2; // mahjong alone = lead control (good)
+    else if (c.rank === 'mahjong') deadCardPenalty -= 2;
     else if (c.isSpecial)      deadCardPenalty += 1;
-    else if (c.numericValue <= 3) deadCardPenalty += 4;  // 2/3 isolated = worst
-    else if (c.numericValue <= 5) deadCardPenalty += 3;  // 4/5 isolated
-    else if (c.numericValue <= 7) deadCardPenalty += 2;  // low isolated
-    else if (c.numericValue <= 9) deadCardPenalty += 1;  // mid isolated
+    else if (c.numericValue <= 3) deadCardPenalty += 4;
+    else if (c.numericValue <= 5) deadCardPenalty += 3;
+    else if (c.numericValue <= 7) deadCardPenalty += 2;
+    else if (c.numericValue <= 9) deadCardPenalty += 1;
     if (!c.isSpecial && c.numericValue <= 5) remDeadCount++;
   }
 
@@ -58,10 +58,32 @@ function remainingHandScore(hand, playedCards) {
     base += remDeadCount * 3;
   }
 
+  // Stuck penalty: if ALL remaining non-special cards are low (≤5), we have no
+  // high cards to win future leads. This is a critical trap.
+  const remNonSpecial = rem.filter(c => !c.isSpecial);
+  if (remNonSpecial.length > 0 && remNonSpecial.every(c => c.numericValue <= 5)) {
+    base += 14;
+  }
+
   return base;
 }
 
-function decideLead(hand, roundState, myId) {
+// Find next active (non-finished) player clockwise from myId
+function getNextActivePlayer(myId, roundState, players) {
+  if (!players) return null;
+  const seats = players.map(p => p.seat).sort((a, b) => a - b);
+  const me = players.find(p => p.id === myId);
+  if (!me) return null;
+  let seatIdx = seats.indexOf(me.seat);
+  for (let i = 0; i < 4; i++) {
+    seatIdx = (seatIdx + 1) % 4;
+    const next = players.find(p => p.seat === seats[seatIdx]);
+    if (next && !(roundState.finishOrder || []).includes(next.id) && next.id !== myId) return next;
+  }
+  return null;
+}
+
+function decideLead(hand, roundState, myId, players) {
   const { wishRank } = roundState;
   const moves = getValidMoves(hand, null, wishRank);
   if (moves.length === 0) return null;
@@ -69,16 +91,15 @@ function decideLead(hand, roundState, myId) {
     const wishMoves = moves.filter(m =>
       m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank))
     );
-    if (wishMoves.length > 0) return chooseLead(wishMoves, hand, roundState);
+    if (wishMoves.length > 0) return chooseLead(wishMoves, hand, roundState, myId, players);
   }
-  return chooseLead(moves, hand, roundState);
+  return chooseLead(moves, hand, roundState, myId, players);
 }
 
-function chooseLead(moves, hand, roundState) {
+function chooseLead(moves, hand, roundState, myId, players) {
   const n = hand.length;
   const endgame = n <= 5;
 
-  // When almost out of cards, use bomb to secure the win
   if (n <= 3) { const bomb = moves.find(m => m.isBomb); if (bomb) return bomb; }
 
   const straights  = moves.filter(m => m.type === 'straight' && !m.isBomb);
@@ -88,9 +109,13 @@ function chooseLead(moves, hand, roundState) {
   const pairs      = moves.filter(m => m.type === 'pair');
   const singles    = moves.filter(m => m.type === 'single' && !m.isBomb);
 
+  // Check next player's hand size to avoid dangerous leads
+  const nextPlayer = getNextActivePlayer(myId, roundState, players);
+  const nextHandSize = nextPlayer ? (roundState.hands?.[nextPlayer.id] || []).length : 99;
+  const nextVeryClose = nextHandSize <= 2; // next player is almost done
+
   // ── Endgame: empty hand as fast as possible ──
   if (endgame) {
-    // Pick the move that minimizes remaining hand score
     const candidates = [...straights, ...steps, ...fullhouses, ...triples, ...pairs, ...singles];
     if (candidates.length > 0) {
       candidates.sort((a, b) => {
@@ -104,27 +129,57 @@ function chooseLead(moves, hand, roundState) {
     return moves[0];
   }
 
+  // ── When next player is nearly done: lead multi-card combos they can't follow ──
+  if (nextVeryClose) {
+    // Multi-card combos: next player can't follow a pair/triple/straight with 1 card
+    const multiCard = [...straights, ...steps, ...fullhouses, ...triples, ...pairs];
+    if (multiCard.length > 0) {
+      multiCard.sort((a, b) => {
+        const sa = remainingHandScore(hand, a.cards);
+        const sb = remainingHandScore(hand, b.cards);
+        if (sa !== sb) return sa - sb;
+        return b.cards.length - a.cards.length || b.rank - a.rank;
+      });
+      return multiCard[0];
+    }
+    // Only singles available: prefer high ones they likely can't beat
+    if (singles.length > 0) {
+      const high = singles.filter(m =>
+        m.cards[0].rank === 'dragon' || m.cards[0].rank === 'phoenix' ||
+        m.cards[0].rank === 'A' || (m.cards[0].numericValue && m.cards[0].numericValue >= 13)
+      );
+      const pool = high.length > 0 ? high : singles;
+      pool.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
+      return pool[0];
+    }
+    return moves[0];
+  }
+
   // ── Normal game: prefer plays that leave the cleanest remaining hand ──
 
-  // Straights: pick longest, then by remaining hand score
+  // Straights: use remainingHandScore as primary, length as tiebreaker.
+  // This avoids playing an overly long straight that leaves only dead cards.
   if (straights.length) {
     straights.sort((a, b) => {
-      if (b.length !== a.length) return b.length - a.length;
-      return remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards);
+      const sa = remainingHandScore(hand, a.cards);
+      const sb = remainingHandScore(hand, b.cards);
+      if (sa !== sb) return sa - sb;
+      return b.cards.length - a.cards.length || b.rank - a.rank;
     });
     return straights[0];
   }
 
   if (steps.length) {
     steps.sort((a, b) => {
-      if (b.length !== a.length) return b.length - a.length;
-      return remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards);
+      const sa = remainingHandScore(hand, a.cards);
+      const sb = remainingHandScore(hand, b.cards);
+      if (sa !== sb) return sa - sb;
+      return b.cards.length - a.cards.length || b.rank - a.rank;
     });
     return steps[0];
   }
 
   if (fullhouses.length) {
-    // Pick fullhouse that leaves cleanest remaining hand
     fullhouses.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
     return fullhouses[0];
   }
@@ -134,9 +189,6 @@ function chooseLead(moves, hand, roundState) {
     return triples[0];
   }
 
-  // Pairs: pick the pair that leaves the cleanest remaining hand.
-  // Also check if splitting the pair into a single scores better
-  // (pair = 1 lead; single = 1 lead now + 1 lead later, possibly more efficient).
   if (pairs.length) {
     pairs.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
     const bestPair = pairs[0];
@@ -156,7 +208,6 @@ function chooseLead(moves, hand, roundState) {
   }
 
   // Singles: avoid leading Dragon/Phoenix/A — save those for stealing opponent tricks.
-  // Lead low/dead cards instead to clear them while still taking the trick.
   if (singles.length) {
     const nonHigh = singles.filter(m => {
       const rank = m.cards[0].rank;
