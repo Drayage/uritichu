@@ -2,7 +2,7 @@ import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
-import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, sfxError, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
+import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, sfxError, sfxExchange, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
 import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame } from './replay.js';
 
 // ── State ──
@@ -167,6 +167,7 @@ function handlePhaseChange(phase, gs, r) {
     hideModal('modal-exchange');
     exchangePhase = false;
     recordRoundStart(r.hands);
+    sfxExchange();
     showReceivedCards(r);
     log('게임 시작!');
   }
@@ -982,6 +983,17 @@ function detectStateEffects(prev, curr) {
 
   const prevPast = pr.pastTricks?.length || 0;
   const currPast = cr.pastTricks?.length || 0;
+
+  // Card play sound for other players (local player already hears sfxCard in doPlay)
+  const prevPlays = pr.currentTrick?.plays?.length ?? 0;
+  const currPlays = cr.currentTrick?.plays?.length ?? 0;
+  if (currPlays > prevPlays && pr.activePlayerId && pr.activePlayerId !== myPlayerId) {
+    if (!_aiFastMode) {
+      const lastCombo = cr.currentTrick.plays[cr.currentTrick.plays.length - 1]?.combination;
+      if (lastCombo?.isBomb) sfxBomb();
+      else sfxCard();
+    }
+  }
 
   // Dog: lead changed without a trick being added to pastTricks
   if (cr.leadPlayerId !== pr.leadPlayerId && currPast === prevPast) {

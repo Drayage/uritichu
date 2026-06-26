@@ -88,6 +88,11 @@ export function sfxError() {
   _tone(185, 0.14, 'square', 0.14, 0.07);
 }
 
+export function sfxExchange() {
+  // Soft upward arpeggio — cards sliding into place
+  [349, 440, 523, 659].forEach((f, i) => _tone(f, 0.11, 'triangle', 0.055, i * 0.07));
+}
+
 // ── Background music ──
 // Simple pentatonic loop: C D E G A (cute, non-annoying)
 const _BG = [
