@@ -229,3 +229,39 @@
   box-shadow: 0 2px 10px rgba(160,142,232,0.4);
   transform: scale(1.12);
 }
+
+/* PWA Install Banner */
+#pwa-install-banner {
+  align-items: center;
+  gap: 10px;
+  background: rgba(160,142,232,0.12);
+  border: 1.5px solid rgba(160,142,232,0.3);
+  border-radius: 14px;
+  padding: 11px 16px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: var(--lavender-dark);
+  font-weight: 600;
+}
+#pwa-install-banner span { flex: 1; }
+#btn-pwa-install {
+  background: var(--lavender-dark);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+#btn-pwa-install:hover { background: #8a78d8; }
+#btn-pwa-dismiss {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}

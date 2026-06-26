@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>우리 티츄 🐦</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="/icons/favicon.png" type="image/png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <meta name="theme-color" content="#a08ee8">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="티츄">
   <link rel="stylesheet" href="css/lobby.css">
 </head>
 <body>
@@ -92,6 +100,13 @@
 
       <div id="room-error" style="color:#ff6b9d; font-size:13px; text-align:center; margin-top:8px; display:none;"></div>
     </div>
+
+    <!-- PWA install banner -->
+    <div id="pwa-install-banner" style="display:none;">
+      <span>📲 홈 화면에 추가하기</span>
+      <button id="btn-pwa-install">설치</button>
+      <button id="btn-pwa-dismiss">✕</button>
+    </div>
   </div>
 
   <!-- Replay Modal -->
@@ -120,5 +135,10 @@
   </div>
 
   <script type="module" src="js/lobby.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  </script>
 </body>
 </html>

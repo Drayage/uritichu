@@ -163,3 +163,33 @@ function renderSeats(room) {
 function escHtml(str) {
   return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+
+// ── PWA Install Banner ──
+{
+  let _pwaPrompt = null;
+  const banner  = document.getElementById('pwa-install-banner');
+  const btnInst = document.getElementById('btn-pwa-install');
+  const btnDism = document.getElementById('btn-pwa-dismiss');
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    _pwaPrompt = e;
+    if (banner) banner.style.display = 'flex';
+  });
+
+  btnInst?.addEventListener('click', async () => {
+    if (!_pwaPrompt) return;
+    await _pwaPrompt.prompt();
+    await _pwaPrompt.userChoice;
+    if (banner) banner.style.display = 'none';
+    _pwaPrompt = null;
+  });
+
+  btnDism?.addEventListener('click', () => {
+    if (banner) banner.style.display = 'none';
+  });
+
+  window.addEventListener('appinstalled', () => {
+    if (banner) banner.style.display = 'none';
+  });
+}
