@@ -1,37 +1,43 @@
 'use strict';
 
-const CACHE = 'uritichu-v2';
+const CACHE = 'uritichu-v3';
 
-const PRECACHE = [
-  '/',
-  '/game',
-  '/manifest.json',
-  '/icons/icon.svg',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png',
-  '/icons/favicon.png',
-  '/css/common.css',
-  '/css/lobby.css',
-  '/css/game.css',
-  '/js/lobby.js',
-  '/js/game-client.js',
-  '/js/room-manager.js',
-  '/js/host-runner.js',
-  '/js/replay.js',
-  '/js/audio.js',
-  '/js/firebase-app.js',
-  '/js/ai/aiPlayer.js',
-  '/js/ai/aiLead.js',
-  '/js/ai/aiFollow.js',
-  '/js/ai/aiExchange.js',
-  '/js/ai/aiTichu.js',
-  '/js/ai/aiUtils.js',
-  '/js/engine/gameState.js',
-  '/js/engine/cards.js',
-  '/js/engine/combinations.js',
-  '/js/engine/exchange.js',
-  '/js/engine/scoring.js',
+// Resolve precache paths relative to this SW's scope so the same
+// sw.js works both at "/" (Express) and at "/uritichu/" (GitHub Pages).
+const BASE = self.registration.scope; // e.g. "https://drayage.github.io/uritichu/"
+
+const PRECACHE_PATHS = [
+  '',
+  'game',
+  'manifest.json',
+  'icons/icon.svg',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'icons/favicon.png',
+  'css/common.css',
+  'css/lobby.css',
+  'css/game.css',
+  'js/lobby.js',
+  'js/game-client.js',
+  'js/room-manager.js',
+  'js/host-runner.js',
+  'js/replay.js',
+  'js/audio.js',
+  'js/firebase-app.js',
+  'js/ai/aiPlayer.js',
+  'js/ai/aiLead.js',
+  'js/ai/aiFollow.js',
+  'js/ai/aiExchange.js',
+  'js/ai/aiTichu.js',
+  'js/ai/aiUtils.js',
+  'js/engine/gameState.js',
+  'js/engine/cards.js',
+  'js/engine/combinations.js',
+  'js/engine/exchange.js',
+  'js/engine/scoring.js',
 ];
+
+const PRECACHE = PRECACHE_PATHS.map(p => BASE + p);
 
 // Network hosts that must never be intercepted (Firebase, Google APIs)
 const BYPASS_HOSTS = [
@@ -86,7 +92,7 @@ self.addEventListener('fetch', e => {
       }).catch(() => {
         // Offline fallback: return lobby for navigation requests
         if (e.request.mode === 'navigate') {
-          return caches.match('/');
+          return caches.match(BASE);
         }
       });
     })
