@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'uritichu-v3';
+const CACHE = 'uritichu-v4';
 
 // Resolve precache paths relative to this SW's scope so the same
 // sw.js works both at "/" (Express) and at "/uritichu/" (GitHub Pages).
@@ -79,21 +79,39 @@ self.addEventListener('fetch', e => {
   // Only cache GET requests
   if (e.request.method !== 'GET') return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(res => {
-        // Cache successful same-origin responses
+  // App code (HTML / JS / CSS) → network-first so fixes always reach users.
+  // Falls back to cache when offline. Icons/images/manifest stay cache-first.
+  const isAppCode =
+    e.request.mode === 'navigate' ||
+    /\.(?:js|css|html)(?:\?.*)?$/.test(url);
+
+  if (isAppCode) {
+    e.respondWith(
+      fetch(e.request).then(res => {
         if (res.ok && res.type === 'basic') {
           const clone = res.clone();
           caches.open(CACHE).then(c => c.put(e.request, clone));
         }
         return res;
-      }).catch(() => {
-        // Offline fallback: return lobby for navigation requests
-        if (e.request.mode === 'navigate') {
-          return caches.match(BASE);
+      }).catch(() =>
+        caches.match(e.request).then(cached =>
+          cached || (e.request.mode === 'navigate' ? caches.match(BASE) : undefined)
+        )
+      )
+    );
+    return;
+  }
+
+  // Static assets (icons, images, manifest) → cache-first
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        if (res.ok && res.type === 'basic') {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
         }
+        return res;
       });
     })
   );
