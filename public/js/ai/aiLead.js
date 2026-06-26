@@ -26,31 +26,40 @@ function minCombosNeeded(hand) {
 function remainingHandScore(hand, playedCards) {
   const playedIds = new Set(playedCards.map(c => c.id));
   const rem = hand.filter(c => !playedIds.has(c.id));
-  if (rem.length === 0) return 1000; // best: empty hand (score as "very good")
+  if (rem.length === 0) return 1000; // best: empty hand
 
-  // Penalty for dead cards: non-special low cards (2–7) that appear alone
-  // (not part of any 2+ card combo in remaining hand)
   const remCombos = getAllCombinations(rem, null);
   const inCombos = new Set();
   for (const m of remCombos) {
     if (m.cards.length >= 2) m.cards.forEach(c => inCombos.add(c.id));
   }
   let deadCardPenalty = 0;
+  let remDeadCount = 0;
   for (const c of rem) {
     if (inCombos.has(c.id)) continue;
-    // Isolated card penalty scales with how unplayable it is
-    if (c.rank === 'dog') deadCardPenalty += 4;       // dog stuck = bad
-    else if (c.rank === 'mahjong') deadCardPenalty -= 2; // mahjong alone = OK (lead control)
-    else if (c.isSpecial) deadCardPenalty += 1;
-    else if (c.numericValue <= 4) deadCardPenalty += 3;  // very low isolated
+    if (c.rank === 'dog')      deadCardPenalty += 4;
+    else if (c.rank === 'mahjong') deadCardPenalty -= 2; // mahjong alone = lead control (good)
+    else if (c.isSpecial)      deadCardPenalty += 1;
+    else if (c.numericValue <= 3) deadCardPenalty += 4;  // 2/3 isolated = worst
+    else if (c.numericValue <= 5) deadCardPenalty += 3;  // 4/5 isolated
     else if (c.numericValue <= 7) deadCardPenalty += 2;  // low isolated
     else if (c.numericValue <= 9) deadCardPenalty += 1;  // mid isolated
-    // High singles (10+) are fine alone — can often win tricks
+    if (!c.isSpecial && c.numericValue <= 5) remDeadCount++;
   }
 
   const combosNeeded = minCombosNeeded(rem);
-  // Total score: fewer combos + fewer dead cards = better
-  return combosNeeded * 3 + deadCardPenalty;
+  let base = combosNeeded * 3 + deadCardPenalty;
+
+  // Lead-waste penalty: playing 2+ lead cards (A/dragon/phoenix) in one combo burns
+  // lead opportunities needed to clear dead cards later.
+  const leadCardsInPlay = playedCards.filter(c =>
+    c.rank === 'A' || c.rank === 'dragon' || c.rank === 'phoenix'
+  ).length;
+  if (leadCardsInPlay >= 2 && remDeadCount > 0) {
+    base += remDeadCount * 3;
+  }
+
+  return base;
 }
 
 function decideLead(hand, roundState, myId) {
@@ -154,14 +163,11 @@ function chooseLead(moves, hand, roundState) {
 
     // Prefer single that leaves cleanest remaining hand
     // But don't lead a high single (A, K) when we have many low dead cards — play low first
-    const deadCount = hand.filter(c => {
-      if (c.isSpecial) return false;
-      return c.numericValue <= 5;
-    }).length;
+    const deadCount = hand.filter(c => !c.isSpecial && c.numericValue <= 5).length;
 
-    if (deadCount >= 2) {
+    if (deadCount >= 1) {
       // Lead low singles to dispose of dead cards
-      const lowPool = pool.filter(m => m.cards[0].numericValue <= 7 && !m.cards[0].isSpecial);
+      const lowPool = pool.filter(m => m.cards[0].numericValue <= 8 && !m.cards[0].isSpecial);
       if (lowPool.length > 0) {
         lowPool.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
         return lowPool[0];

@@ -97,7 +97,10 @@ function decideFollow(hand, roundState, myId, players) {
   }
 
   // Only bombs left — use when justified
-  const bombJustified = trickPts >= 15 || hand.length <= 5 || opponentTichu || dragonInTrick;
+  const deadInHand = hand.filter(c => !c.isSpecial && c.numericValue <= 5).length;
+  const stuckWithDeadCards = deadInHand >= 3 && hand.length >= 8;
+  const bombJustified = trickPts >= 15 || hand.length <= 5 || opponentTichu || dragonInTrick
+    || stuckWithDeadCards;
   if (bombs.length > 0 && bombJustified) {
     bombs.sort((a, b) => a.rank - b.rank);
     return bombs[0];

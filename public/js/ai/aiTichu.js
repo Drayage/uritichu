@@ -27,7 +27,6 @@ function handStrength14(hand) {
     else if (c.rank === 'K')        score += 2;
     else if (c.rank === 'Q')        score += 1;
     else if (c.rank === '2' || c.rank === '3') score -= 0.5;
-    // dog is a minor burden when racing to go out first
     else if (c.rank === 'dog')      score -= 1;
     if (!c.isSpecial) {
       counts[c.numericValue] = (counts[c.numericValue] || 0) + 1;
@@ -37,48 +36,61 @@ function handStrength14(hand) {
 
   // Combo bonuses: bomb >> triple > pair
   for (const cnt of Object.values(counts)) {
-    if (cnt >= 4)      score += 8;  // bomb — nearly guarantees a trick
+    if (cnt >= 4)       score += 8;
     else if (cnt === 3) score += 2;
     else if (cnt === 2) score += 1;
   }
 
-  // Multiple aces give control over the single-card game
+  // Multiple aces
   const aceCount = hand.filter(c => c.rank === 'A').length;
   if (aceCount >= 2) score += aceCount;
 
-  // Long straight potential: the longer, the more cards cleared at once
+  // Long straight potential
   const sortedVals = [...new Set(values)].sort((a, b) => a - b);
   let maxRun = 1, curRun = 1;
   for (let i = 1; i < sortedVals.length; i++) {
     if (sortedVals[i] === sortedVals[i - 1] + 1) { curRun++; maxRun = Math.max(maxRun, curRun); }
     else curRun = 1;
   }
-  if (maxRun >= 5) score += maxRun - 2;  // +3 for 5-card run, +4 for 6-card, etc.
+  // Long straights let you clear dead cards in one lead: give extra bonus
+  if (maxRun >= 6) score += 2;
+  else if (maxRun >= 5) score += 1;
 
-  // Lead control: count how many times we can reliably grab the lead.
-  // Tichu requires enough lead control to be first out consistently.
-  let leadControl = 0;
-  for (const cnt of Object.values(counts)) if (cnt >= 4) leadControl += 6; // bomb
-  if (hand.some(c => c.rank === 'mahjong')) leadControl += 4; // guaranteed first lead
-  if (hand.some(c => c.rank === 'dragon'))  leadControl += 3;
-  if (hand.some(c => c.rank === 'phoenix')) leadControl += 2;
-  leadControl += hand.filter(c => c.rank === 'A').length * 1.5;
-  // Long straights give big multi-card clears when leading
-  if (maxRun >= 6) leadControl += 2;
-  else if (maxRun >= 5) leadControl += 1;
+  // ── Lead cards vs Dead cards ─────────────────────────────────────────────
+  // Lead cards: cards that near-guarantee taking the lead (~1 lead each).
+  // Each dead card needs one lead to get played out, so net = leadCards - deadCards.
+  let leadCards = 0;
+  for (const cnt of Object.values(counts)) if (cnt >= 4) leadCards += 2; // bomb = 2 leads
+  if (hand.some(c => c.rank === 'mahjong')) leadCards += 1;
+  if (hand.some(c => c.rank === 'dragon'))  leadCards += 1;
+  if (hand.some(c => c.rank === 'phoenix')) leadCards += 1;
+  leadCards += aceCount;
 
-  // Require at least 2 sure leads for tichu to be viable
-  if (leadControl < 2) score -= 6;
-  else if (leadControl >= 4) score += 3; // many lead opportunities = very good
+  // Dead cards: isolated low cards (≤5) with no adjacent value and no pair
+  let deadCards = 0;
+  for (const v of sortedVals) {
+    if (v > 5) continue;
+    const hasNeighbor = sortedVals.includes(v - 1) || sortedVals.includes(v + 1)
+                     || (counts[v] >= 2);
+    if (!hasNeighbor) deadCards++;
+  }
+
+  const leadNet = leadCards - deadCards;
+  if      (leadNet >= 4)  score += 6;
+  else if (leadNet >= 3)  score += 4;
+  else if (leadNet >= 2)  score += 2;
+  else if (leadNet === 1) score += 0;
+  else if (leadNet === 0) score -= 3;
+  else                    score -= 6; // dead cards > lead cards → tichu is very risky
 
   return score;
 }
 
 function shouldCallGrandTichu(hand8, partnerCalledGT = false) {
-  return handStrength8(hand8) >= (partnerCalledGT ? 15 : 10);
+  return handStrength8(hand8) >= (partnerCalledGT ? 18 : 12);
 }
 function shouldCallTichu(hand14, partnerHasTichu = false) {
-  return handStrength14(hand14) >= (partnerHasTichu ? 22 : 16);
+  return handStrength14(hand14) >= (partnerHasTichu ? 26 : 19);
 }
 
 export { shouldCallGrandTichu, shouldCallTichu };
