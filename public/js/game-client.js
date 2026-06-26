@@ -385,16 +385,15 @@ function toggleSelect(card, el) {
   if (selectedIds.has(card.id)) { selectedIds.delete(card.id); el.classList.remove('selected'); }
   else { selectedIds.add(card.id); el.classList.add('selected'); }
   updateSelectedInfo();
-  updateCombinableHighlight();
-  // On lead turn: clear 'playable' glow once a card is selected; restore when all deselected
-  const r = currentGs?.currentRound;
-  const isLead = r && !r.currentTrick?.winningCombo;
-  if (isLead) {
-    if (selectedIds.size > 0) {
-      document.querySelectorAll('#my-hand .card.playable').forEach(e => e.classList.remove('playable'));
-    } else {
-      updatePlayableHighlight(r.currentTrick);
-    }
+  if (selectedIds.size > 0) {
+    // Stage 2: hide all playable glow, show only combinable cards
+    document.querySelectorAll('#my-hand .card.playable').forEach(e => e.classList.remove('playable'));
+    updateCombinableHighlight();
+  } else {
+    // Stage 1: back to showing all playable cards
+    document.querySelectorAll('#my-hand .card.combinable').forEach(e => e.classList.remove('combinable'));
+    const r = currentGs?.currentRound;
+    updatePlayableHighlight(r?.currentTrick);
   }
 }
 
@@ -1236,18 +1235,17 @@ function updatePlayableHighlight(currentTrick) {
   }
 }
 
-// ── Combinable highlight (lead turn / exchange) ──
+// ── Combinable highlight (stage 2: cards that complete the current selection) ──
 function updateCombinableHighlight() {
   document.querySelectorAll('#my-hand .card.combinable').forEach(el => el.classList.remove('combinable'));
 
   if (selectedIds.size === 0) return;
 
-  // Only active on lead turn (no current winning combo to beat)
   const r = currentGs?.currentRound;
-  if (r?.currentTrick?.winningCombo) return;
+  const currentCombo = r?.currentTrick?.winningCombo || null;
 
   const selectedCards = myHand.filter(c => selectedIds.has(c.id));
-  const validMoves = getValidMoves(myHand, null, r?.wishRank || null);
+  const validMoves = getValidMoves(myHand, currentCombo, r?.wishRank || null);
 
   // Match combos by rank multiset (not card ID) so duplicate-rank cards
   // (e.g. two 7s) all trigger the same highlight regardless of which instance is selected.
