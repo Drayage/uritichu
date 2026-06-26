@@ -24,10 +24,14 @@ function decideFollow(hand, roundState, myId, players) {
   const nonBombs = validMoves.filter(m => !m.isBomb);
   const bombs    = validMoves.filter(m => m.isBomb);
 
-  // When wish is active and we have wish-satisfying non-bomb moves, we MUST play one.
+  // Wish obligation: must play a combo with the wish rank if any valid move has it.
+  // Bombs with the wish rank count — if a bomb is the ONLY way to play the wish rank, must play it.
   const hasWishedCard = (m) => m.cards.some(c => c.rank === wishRank || String(c.numericValue) === String(wishRank));
-  const wishObligated = !!(wishRank && nonBombs.some(hasWishedCard));
-  const wishMoves = wishObligated ? nonBombs.filter(hasWishedCard) : [];
+  const wishObligated    = !!(wishRank && validMoves.some(hasWishedCard));
+  const nonBombWishMoves = wishObligated ? nonBombs.filter(hasWishedCard) : [];
+  const bombWishMoves    = wishObligated ? bombs.filter(hasWishedCard) : [];
+  // Prefer non-bomb wish moves; fall back to wish-bomb when that's the only option
+  const wishMoves = nonBombWishMoves.length > 0 ? nonBombWishMoves : bombWishMoves;
 
   // Does any unfinished opponent have tichu/grand tichu called?
   const opponentTichu = players.some(p =>
@@ -106,7 +110,7 @@ function decideFollow(hand, roundState, myId, players) {
     return playPool[0];
   }
 
-  // Only bombs left — use when justified
+  // Only bombs left — use when justified, or when wish-obligated with a bomb of the right rank
   const deadInHand = hand.filter(c => !c.isSpecial && c.numericValue <= 5).length;
   const stuckWithDeadCards = deadInHand >= 3 && hand.length >= 8;
   const bombJustified = trickPts >= 15 || hand.length <= 5 || opponentTichu || dragonInTrick
@@ -114,6 +118,12 @@ function decideFollow(hand, roundState, myId, players) {
   if (bombs.length > 0 && bombJustified) {
     bombs.sort((a, b) => a.rank - b.rank);
     return bombs[0];
+  }
+
+  // Wish-bomb is mandatory even if not otherwise justified
+  if (wishObligated && bombWishMoves.length > 0) {
+    bombWishMoves.sort((a, b) => a.rank - b.rank);
+    return bombWishMoves[0];
   }
 
   return 'pass';
