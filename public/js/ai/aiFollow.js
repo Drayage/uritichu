@@ -86,14 +86,24 @@ function decideFollow(hand, roundState, myId, players) {
       wishMoves.sort((a, b) => a.rank - b.rank);
       return wishMoves[0];
     }
+
+    // Phoenix single is only worth using when the winning rank is high (≥ J).
+    // Its effective rank = curRank + 0.5, so against a 5 you waste it when a 6 would do.
+    const isPhoenixSingle = (m) => m.cards.length === 1 && m.cards[0].rank === 'phoenix';
+    const curRank = winningCombo?.rank ?? 0;
+    const nonBombPool = curRank >= 11
+      ? nonBombs
+      : nonBombs.filter(m => !isPhoenixSingle(m));
+    const playPool = nonBombPool.length > 0 ? nonBombPool : nonBombs;
+
     // Don't waste 3+ card combos on a 0-point trick with no threat
     if (trickPts === 0 && !opponentTichu && !dragonInTrick) {
-      const cheap = nonBombs.filter(m => m.length <= 2);
+      const cheap = playPool.filter(m => m.length <= 2);
       if (cheap.length > 0) { cheap.sort((a, b) => a.rank - b.rank); return cheap[0]; }
       return 'pass'; // would need big combo on a worthless trick
     }
-    nonBombs.sort((a, b) => a.rank - b.rank);
-    return nonBombs[0];
+    playPool.sort((a, b) => a.rank - b.rank);
+    return playPool[0];
   }
 
   // Only bombs left — use when justified

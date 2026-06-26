@@ -1,5 +1,4 @@
 import { getValidMoves, getAllCombinations } from '../engine/combinations.js';
-import { getHighCardContext } from './aiUtils.js';
 
 // Count minimum combos needed to empty the given hand (greedy: largest first)
 function minCombosNeeded(hand) {
@@ -135,38 +134,41 @@ function chooseLead(moves, hand, roundState) {
     return triples[0];
   }
 
-  // Pairs: pick the pair that leaves the cleanest remaining hand
+  // Pairs: pick the pair that leaves the cleanest remaining hand.
+  // Also check if splitting the pair into a single scores better
+  // (pair = 1 lead; single = 1 lead now + 1 lead later, possibly more efficient).
   if (pairs.length) {
     pairs.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
-    return pairs[0];
-  }
+    const bestPair = pairs[0];
 
-  // Singles: use card counting to pick the smartest lead
-  if (singles.length) {
-    const nonDragon = singles.filter(m => m.cards[0].rank !== 'dragon');
-    const pool = nonDragon.length ? nonDragon : singles;
-
-    // If dragon is still unknown (not played yet) and we only have one ace,
-    // leading that ace risks losing it to an opponent's dragon.
-    // Prefer leading K in that case to test waters first.
-    if (roundState) {
-      const ctx = getHighCardContext(roundState);
-      const myAces = hand.filter(c => c.rank === 'A');
-      if (!ctx.dragonOut && myAces.length === 1) {
-        const kings = pool.filter(m => m.cards[0].rank === 'K');
-        if (kings.length > 0) {
-          kings.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
-          return kings[0];
-        }
+    if (singles.length > 0) {
+      const pairCardRank = bestPair.cards[0].rank;
+      const altSingle = singles.find(m =>
+        m.cards[0].rank === pairCardRank && m.cards[0].rank !== 'dragon'
+      );
+      if (altSingle) {
+        const pairScore   = remainingHandScore(hand, bestPair.cards);
+        const singleScore = remainingHandScore(hand, altSingle.cards);
+        if (singleScore < pairScore - 3) return altSingle;
       }
     }
+    return bestPair;
+  }
 
-    // Prefer single that leaves cleanest remaining hand
-    // But don't lead a high single (A, K) when we have many low dead cards — play low first
+  // Singles: avoid leading Dragon/Phoenix/A — save those for stealing opponent tricks.
+  // Lead low/dead cards instead to clear them while still taking the trick.
+  if (singles.length) {
+    const nonHigh = singles.filter(m => {
+      const rank = m.cards[0].rank;
+      return rank !== 'dragon' && rank !== 'phoenix' && rank !== 'A';
+    });
+    const midPool = nonHigh.length > 0
+      ? nonHigh
+      : singles.filter(m => m.cards[0].rank !== 'dragon' && m.cards[0].rank !== 'phoenix');
+    const pool = midPool.length > 0 ? midPool : singles;
+
     const deadCount = hand.filter(c => !c.isSpecial && c.numericValue <= 5).length;
-
     if (deadCount >= 1) {
-      // Lead low singles to dispose of dead cards
       const lowPool = pool.filter(m => m.cards[0].numericValue <= 8 && !m.cards[0].isSpecial);
       if (lowPool.length > 0) {
         lowPool.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards));
@@ -174,7 +176,7 @@ function chooseLead(moves, hand, roundState) {
       }
     }
 
-    pool.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards) || b.rank - a.rank);
+    pool.sort((a, b) => remainingHandScore(hand, a.cards) - remainingHandScore(hand, b.cards) || a.rank - b.rank);
     return pool[0];
   }
 
