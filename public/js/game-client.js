@@ -614,6 +614,7 @@ function enableActions(isMyTurn, currentTrick) {
   else {
     document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
     document.querySelectorAll('#my-hand .card.combinable').forEach(el => el.classList.remove('combinable'));
+    document.getElementById('btn-pass')?.classList.remove('pulse-hint');
   }
 }
 
@@ -622,6 +623,7 @@ function disableActions() {
   document.getElementById('btn-pass').disabled = true;
   document.getElementById('btn-bomb').style.display = 'none';
   document.getElementById('hand-area').classList.remove('my-turn');
+  document.getElementById('btn-pass')?.classList.remove('pulse-hint');
 }
 
 function updateBombButton(currentTrick) {
