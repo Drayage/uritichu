@@ -831,6 +831,40 @@ function showWishModal() {
     handEl.appendChild(createCardEl(card));
   }
 
+  // Show cards I gave in exchange (still in opponents' hands → strategic info)
+  const givenSection = document.getElementById('wish-given-section');
+  const givenList = document.getElementById('wish-given-list');
+  givenList.innerHTML = '';
+  const myP = players.find(p => p.id === myPlayerId);
+  const myGiven = currentGs?.currentRound?.exchangeCards?.[myPlayerId];
+  if (myP && myGiven) {
+    const mySeat = myP.seat;
+    const givenTargets = [
+      { relSeat: (mySeat + 1) % 4, key: 'left',   label: '왼쪽' },
+      { relSeat: (mySeat + 2) % 4, key: 'across',  label: '파트너' },
+      { relSeat: (mySeat + 3) % 4, key: 'right',   label: '오른쪽' },
+    ];
+    let hasGiven = false;
+    for (const { relSeat, key, label } of givenTargets) {
+      const recipient = players.find(p => p.seat === relSeat);
+      const card = myGiven[key];
+      if (!recipient || !card) continue;
+      hasGiven = true;
+      const item = document.createElement('div');
+      item.className = 'received-item';
+      item.style.cssText = 'display:flex; flex-direction:column; align-items:center; gap:3px;';
+      const lbl = document.createElement('div');
+      lbl.className = 'received-from';
+      lbl.textContent = `${recipient.avatar || '🙂'} ${label}`;
+      item.appendChild(lbl);
+      item.appendChild(createCardEl(card));
+      givenList.appendChild(item);
+    }
+    givenSection.style.display = hasGiven ? '' : 'none';
+  } else {
+    givenSection.style.display = 'none';
+  }
+
   const grid = document.getElementById('wish-rank-grid');
   grid.innerHTML = '';
   for (const r of ['2','3','4','5','6','7','8','9','10','J','Q','K','A']) {
@@ -1295,53 +1329,6 @@ function showReceivedCards(r) {
     list.appendChild(item);
   }
   box.appendChild(list);
-
-  // Given cards section: what I sent to each player
-  const myGiven = r.exchangeCards[myPlayerId];
-  if (myGiven) {
-    const givenTargets = [
-      { relSeat: (seat + 1) % 4, key: 'left',   label: '왼쪽' },
-      { relSeat: (seat + 2) % 4, key: 'across',  label: '파트너' },
-      { relSeat: (seat + 3) % 4, key: 'right',   label: '오른쪽' },
-    ];
-    const givenCards = givenTargets.map(({ relSeat, key, label }) => {
-      const recipient = players.find(p => p.seat === relSeat);
-      if (!recipient) return null;
-      const card = myGiven[key];
-      if (!card) return null;
-      return { card, recipientName: recipient.name, recipientAvatar: recipient.avatar || '🙂', label };
-    }).filter(Boolean);
-
-    if (givenCards.length > 0) {
-      const divider = document.createElement('div');
-      divider.className = 'received-divider';
-      box.appendChild(divider);
-
-      const givenTitle = document.createElement('div');
-      givenTitle.className = 'received-title';
-      givenTitle.textContent = '준 카드 🤝';
-      box.appendChild(givenTitle);
-
-      const givenList = document.createElement('div');
-      givenList.className = 'received-list';
-      for (const { card, recipientName, recipientAvatar, label } of givenCards) {
-        const item = document.createElement('div');
-        item.className = 'received-item';
-        const to = document.createElement('div');
-        to.className = 'received-from';
-        to.textContent = `${label} · ${escHtml(recipientName)}`;
-        item.appendChild(to);
-        const cardEl = createCardEl(card);
-        const badge = document.createElement('div');
-        badge.className = 'card-from';
-        badge.textContent = recipientAvatar;
-        cardEl.appendChild(badge);
-        item.appendChild(cardEl);
-        givenList.appendChild(item);
-      }
-      box.appendChild(givenList);
-    }
-  }
 
   overlay.appendChild(box);
   document.body.appendChild(overlay);
