@@ -1085,9 +1085,19 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   #trick-area { max-width: min(290px, 88vw); padding: 6px 8px; }
   .trick-play { max-width: min(270px, 84vw); }
 
-  /* Hand area: fixed height, buttons always visible */
-  #hand-area { padding: 6px 8px 8px; height: 100%; max-height: none; min-height: none; gap: 5px; overflow: hidden; }
-  #my-hand { gap: 4px; flex: 0 0 auto; max-height: 128px; overflow-y: hidden; }
+  /* Hand area: cards shrink/scroll so the action buttons are ALWAYS visible,
+     and reserve the bottom safe-area inset (home indicator / browser bar). */
+  #hand-area {
+    padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    gap: 5px;
+    overflow: hidden;
+  }
+  /* my-hand absorbs any vertical squeeze (scrolls if too tall) instead of
+     pushing the buttons off-screen. */
+  #my-hand { gap: 4px; flex: 1 1 0; min-height: 0; max-height: 128px; overflow-y: auto; }
   .hand-actions { flex-shrink: 0; }
   #combo-hint { flex-shrink: 0; min-height: 0; }
 
