@@ -2,7 +2,7 @@ import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
-import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
+import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, sfxError, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
 import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame } from './replay.js';
 
 // ── State ──
@@ -238,7 +238,8 @@ async function doPlay(wishRank) {
       const validMoves = getValidMoves(myHand, null, activeWish);
       const canSatisfy = validMoves.some(m => m.cards.some(c => c.rank === activeWish || String(c.numericValue) === String(activeWish)));
       if (canSatisfy) {
-        setStatus(`⚠️ 소원 숫자 ${activeWish}를 포함한 패를 내야 해요!`);
+        sfxError();
+        showWarnToast(`⭐ 소원 ${activeWish} 포함된 패를 내야 해요!`);
         return;
       }
     }
@@ -1030,7 +1031,7 @@ window._toggleAISpeed = () => {
   _aiFastMode = !_aiFastMode;
   setAIFastMode(_aiFastMode);
   const btn = document.getElementById('btn-speed');
-  if (btn) { btn.textContent = _aiFastMode ? '⏩ 배속' : '▶▶ 배속'; btn.classList.toggle('active', _aiFastMode); }
+  if (btn) { btn.textContent = _aiFastMode ? '⏩' : '▶▶'; btn.classList.toggle('active', _aiFastMode); }
 };
 
 // ── Trick points helpers ──
@@ -1049,8 +1050,14 @@ function updateTrickPoints(r) {
   }
 }
 
+let _lastTrickSfxAt = 0;
 function showTrickWonToast(winnerId, pts) {
-  sfxTrickWon();
+  // Throttle sfx in fast mode so audio context doesn't get overwhelmed
+  const now = Date.now();
+  if (!_aiFastMode || now - _lastTrickSfxAt > 280) {
+    sfxTrickWon();
+    _lastTrickSfxAt = now;
+  }
   if (_aiFastMode) return; // skip toast in fast mode — too many stack up
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast';
@@ -1060,6 +1067,14 @@ function showTrickWonToast(winnerId, pts) {
     : `${name} 먹음`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 1800);
+}
+
+function showWarnToast(msg) {
+  const toast = document.createElement('div');
+  toast.className = 'trick-won-toast warn-toast';
+  toast.textContent = msg;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2200);
 }
 
 function showDogToast(newLeadId) {

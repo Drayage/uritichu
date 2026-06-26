@@ -83,6 +83,11 @@ export function sfxRoundOver() {
   [392, 523, 659, 523, 784].forEach((f, i) => _tone(f, 0.14, 'square', 0.15, i * 0.11));
 }
 
+export function sfxError() {
+  _tone(220, 0.08, 'square', 0.18);
+  _tone(185, 0.14, 'square', 0.14, 0.07);
+}
+
 // ── Background music ──
 // Simple pentatonic loop: C D E G A (cute, non-annoying)
 const _BG = [
