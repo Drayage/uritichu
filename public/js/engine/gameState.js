@@ -151,7 +151,7 @@ function pass(gameState, playerId) {
   if (r.wishRank && r.currentTrick.winningCombo) {
     const hand = r.hands[playerId] || [];
     const validMoves = getValidMoves(hand, r.currentTrick.winningCombo, r.wishRank);
-    const mustPlay = validMoves.some(m => !m.isBomb &&
+    const mustPlay = validMoves.some(m =>
       m.cards.some(c => c.rank === r.wishRank || String(c.numericValue) === String(r.wishRank))
     );
     if (mustPlay) return { error: `소원 숫자(${r.wishRank})를 포함한 족보를 내야 합니다` };
