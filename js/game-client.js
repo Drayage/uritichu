@@ -611,7 +611,10 @@ function enableActions(isMyTurn, currentTrick) {
   document.getElementById('hand-area').classList.toggle('my-turn', isMyTurn);
   updateBombButton(currentTrick);
   if (isMyTurn) updatePlayableHighlight(currentTrick);
-  else document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
+  else {
+    document.querySelectorAll('#my-hand .card.playable').forEach(el => el.classList.remove('playable'));
+    document.querySelectorAll('#my-hand .card.combinable').forEach(el => el.classList.remove('combinable'));
+  }
 }
 
 function disableActions() {
