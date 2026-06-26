@@ -894,6 +894,17 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 .result-pts { font-weight: 800; color: var(--lavender-dark); min-width: 40px; text-align: right; }
 .result-team { font-size: 10px; font-weight: 700; color: var(--text-light); }
+.tichu-badge {
+  display: inline-block;
+  margin-left: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 20px;
+  vertical-align: middle;
+}
+.tichu-success { background: rgba(100,220,150,0.2); color: #1a8a4a; border: 1px solid rgba(100,220,150,0.5); }
+.tichu-fail    { background: rgba(255,100,100,0.15); color: #c0392b; border: 1px solid rgba(255,100,100,0.35); }
 .result-notes {
   margin: 10px 0 6px;
   padding: 8px 10px;

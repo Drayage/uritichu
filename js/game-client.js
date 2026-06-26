@@ -918,7 +918,20 @@ function showRoundOverModal(r, totalScores) {
     const p = players.find(x => x.id === pid);
     const trickPts = calcCardPoints(r.trickWinners?.[pid] || []);
     const tl = p ? teamLabel(p.teamIndex) : '';
-    return `<div class="result-row"><span>${placeEmoji[i]} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span></span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
+    const isFirst = i === 0;
+    const calledGrand = r.grandTichuCalls?.[pid] === true;
+    const calledSmall = r.tichuCalls?.[pid] === true;
+    let tichuBadge = '';
+    if (calledGrand) {
+      tichuBadge = isFirst
+        ? '<span class="tichu-badge tichu-success">👑 라지티츄 성공 +200</span>'
+        : '<span class="tichu-badge tichu-fail">👑 라지티츄 실패 -200</span>';
+    } else if (calledSmall) {
+      tichuBadge = isFirst
+        ? '<span class="tichu-badge tichu-success">🎯 티츄 성공 +100</span>'
+        : '<span class="tichu-badge tichu-fail">🎯 티츄 실패 -100</span>';
+    }
+    return `<div class="result-row"><span>${placeEmoji[i]} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
   }).join('');
 
   // Scoring notes
