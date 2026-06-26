@@ -30,7 +30,23 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(201,184,245,0.3);
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+}
+
+.top-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.top-logo-icon { font-size: 22px; }
+.top-logo-text { font-weight: 800; color: var(--lavender-dark); white-space: nowrap; }
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 #table-area {
@@ -961,12 +977,25 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   }
   #sidebar { display: none; }
 
-  /* Top bar: compact */
-  #top-bar { padding: 5px 8px; gap: 5px; flex-wrap: nowrap; }
-  #status-bar { font-size: 11px; padding: 4px 8px; min-width: 70px; }
-  #btn-tichu { font-size: 11px; padding: 5px 9px; }
-  #btn-rules, .btn-surrender { font-size: 12px; padding: 5px 9px; }
-  #wish-indicator { font-size: 11px; padding: 3px 8px; }
+  /* Top bar: single compact row */
+  #top-bar {
+    padding: 0 10px;
+    height: 48px;
+    min-height: 48px;
+    gap: 6px;
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .top-logo { gap: 5px; }
+  .top-logo-icon { font-size: 18px; }
+  .top-logo-text { font-size: 13px; white-space: nowrap; }
+  .top-label { display: none; }
+  #status-bar { font-size: 11px; padding: 4px 6px; min-width: 60px; flex: 1; text-align: center; }
+  .top-actions { gap: 4px; }
+  #btn-tichu { font-size: 11px; padding: 5px 8px; }
+  #btn-mute, #btn-rules, .btn-surrender { font-size: 15px; padding: 5px 7px; }
+  #btn-speed { font-size: 12px; padding: 5px 7px; }
+  #wish-indicator { font-size: 11px; padding: 3px 6px; }
 
   /* Table fills available area */
   #table-area { align-items: stretch; padding: 0; }
