@@ -37,7 +37,7 @@ function decideAction(gameState, playerId) {
     }
     if (r.activePlayerId !== playerId) return null;
     if (!r.currentTrick || r.currentTrick.plays.length === 0) {
-      const combo = decideLead(hand, r, playerId);
+      const combo = decideLead(hand, r, playerId, gameState.players);
       if (!combo) return { action: 'pass', data: {} };
       let wishRank = null;
       if (combo.cards.some(c => c.rank === 'mahjong')) {
