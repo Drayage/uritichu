@@ -131,6 +131,11 @@ function renderSeats(room) {
   const teamNames = ['A', 'B'];
   const seatPositions = ['남쪽(나)', '서쪽', '북쪽', '동쪽'];
   const amHost = room.hostId === myPlayerId;
+  const full = room.players.length === 4;
+  const startBtn = document.getElementById('btn-start');
+  startBtn.disabled = !full;
+  startBtn.style.opacity = full ? '' : '0.45';
+  startBtn.title = full ? '' : '4명이 모여야 시작할 수 있어요';
 
   for (let seat = 0; seat < 4; seat++) {
     const player = room.players.find(p => p.seat === seat);
