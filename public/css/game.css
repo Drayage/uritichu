@@ -62,8 +62,8 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   backdrop-filter: blur(6px);
   border-top: 1px solid rgba(201,184,245,0.3);
   min-height: 130px;
-  max-height: 280px;
-  overflow-y: auto;
+  max-height: 290px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -208,7 +208,9 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   gap: 4px;
   padding: 4px 0;
   flex-wrap: wrap;
-  overflow-y: hidden;
+  overflow-y: auto;
+  max-height: 175px;
+  flex-shrink: 1;
   scrollbar-width: thin;
   scrollbar-color: var(--lavender) transparent;
 }
@@ -218,12 +220,14 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-shrink: 0;
 }
 
 .hand-actions {
   display: flex;
   gap: 8px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .hand-label {
@@ -607,13 +611,14 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 
 /* ── Combo hint ── */
 .combo-hint {
-  min-height: 20px;
+  min-height: 18px;
   font-size: 12px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 .hint-valid   { color: #2a8c6a; }
@@ -1082,7 +1087,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 
   /* Hand area: fixed height, buttons always visible */
   #hand-area { padding: 6px 8px 8px; height: 100%; max-height: none; min-height: none; gap: 5px; overflow: hidden; }
-  #my-hand { gap: 4px; flex: 1; max-height: 142px; overflow-y: hidden; flex-shrink: 0; }
+  #my-hand { gap: 4px; flex: 0 0 auto; max-height: 128px; overflow-y: hidden; }
   .hand-actions { flex-shrink: 0; }
   #combo-hint { flex-shrink: 0; min-height: 0; }
 
@@ -1118,7 +1123,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   .card-rank-top, .card-rank-bot { font-size: 9px; }
   .card-suit { font-size: 15px; }
   .card-back { width: 26px; height: 38px; font-size: 11px; }
-  #my-hand { max-height: 118px; }
+  #my-hand { max-height: 104px; }
 }
 
 /* ── Received cards overlay ── */
