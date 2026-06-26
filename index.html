@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>우리 티츄 🐦</title>
+  <script>
+    window._pwaPrompt = null;
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      window._pwaPrompt = e;
+      const b = document.getElementById('pwa-install-banner');
+      if (b) b.style.display = 'flex';
+    });
+  </script>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
   <link rel="icon" href="/icons/favicon.png" type="image/png">
