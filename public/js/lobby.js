@@ -166,23 +166,25 @@ function escHtml(str) {
 
 // ── PWA Install Banner ──
 {
-  let _pwaPrompt = null;
   const banner  = document.getElementById('pwa-install-banner');
   const btnInst = document.getElementById('btn-pwa-install');
   const btnDism = document.getElementById('btn-pwa-dismiss');
 
+  // beforeinstallprompt may have fired before this module loaded — check early capture
+  if (window._pwaPrompt && banner) banner.style.display = 'flex';
+
   window.addEventListener('beforeinstallprompt', e => {
     e.preventDefault();
-    _pwaPrompt = e;
+    window._pwaPrompt = e;
     if (banner) banner.style.display = 'flex';
   });
 
   btnInst?.addEventListener('click', async () => {
-    if (!_pwaPrompt) return;
-    await _pwaPrompt.prompt();
-    await _pwaPrompt.userChoice;
+    if (!window._pwaPrompt) return;
+    await window._pwaPrompt.prompt();
+    await window._pwaPrompt.userChoice;
     if (banner) banner.style.display = 'none';
-    _pwaPrompt = null;
+    window._pwaPrompt = null;
   });
 
   btnDism?.addEventListener('click', () => {
