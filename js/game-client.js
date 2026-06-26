@@ -1051,6 +1051,7 @@ function updateTrickPoints(r) {
 
 function showTrickWonToast(winnerId, pts) {
   sfxTrickWon();
+  if (_aiFastMode) return; // skip toast in fast mode — too many stack up
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast';
   const name = getPlayerName(winnerId);
@@ -1062,6 +1063,7 @@ function showTrickWonToast(winnerId, pts) {
 }
 
 function showDogToast(newLeadId) {
+  if (_aiFastMode) return;
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast dog-toast';
   toast.textContent = `🐶 → ${getPlayerName(newLeadId)} 선공권`;
@@ -1162,16 +1164,47 @@ function updateCombinableHighlight() {
   const r = currentGs?.currentRound;
   if (r?.currentTrick?.winningCombo) return;
 
+  const selectedCards = myHand.filter(c => selectedIds.has(c.id));
   const validMoves = getValidMoves(myHand, null, r?.wishRank || null);
-  // Keep only combos that contain every selected card
+
+  // Match combos by rank multiset (not card ID) so duplicate-rank cards
+  // (e.g. two 7s) all trigger the same highlight regardless of which instance is selected.
+  const cardRank = c => c.numericValue ?? c.rank; // numeric for normal, string for specials
+  const selectedRanks = selectedCards.map(cardRank).sort();
+
+  function rankMultisetContains(comboRanks, needed) {
+    const pool = [...comboRanks];
+    for (const r of needed) {
+      const i = pool.indexOf(r);
+      if (i === -1) return false;
+      pool.splice(i, 1);
+    }
+    return true;
+  }
+
   const matchingCombos = validMoves.filter(combo =>
-    [...selectedIds].every(id => combo.cards.some(c => c.id === id))
+    rankMultisetContains(combo.cards.map(cardRank), selectedRanks)
   );
 
+  // For each matching combo, find ranks not yet selected and highlight
+  // any unselected hand card that satisfies those ranks.
   const combinableIds = new Set();
   for (const combo of matchingCombos) {
+    const neededRanks = [...selectedRanks];
+    const extraRanks = [];
     for (const c of combo.cards) {
-      if (!selectedIds.has(c.id)) combinableIds.add(c.id);
+      const rk = cardRank(c);
+      const i = neededRanks.indexOf(rk);
+      if (i !== -1) neededRanks.splice(i, 1);
+      else extraRanks.push(rk);
+    }
+    // Match extra ranks to actual unselected hand cards (in order, one-to-one)
+    const pool = [...extraRanks];
+    for (const c of myHand) {
+      if (selectedIds.has(c.id)) continue;
+      const rk = cardRank(c);
+      const i = pool.indexOf(rk);
+      if (i !== -1) { combinableIds.add(c.id); pool.splice(i, 1); }
     }
   }
 
