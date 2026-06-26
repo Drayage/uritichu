@@ -21,6 +21,8 @@ let _replayActive = false;
 let _aiFastMode = false;
 let _lastTrickFirstPlayId = null;
 let _lastTrickPlaysLength = 0;
+// card id → sender avatar, set after exchange so hand renders the badge
+const _receivedFromAvatar = new Map();
 
 const SUIT_ICON = { jade: '🌿', sword: '⭐', pagoda: '🏠', star: '💜' };
 const RANK_DISPLAY = { mahjong: '🐦', dog: '🐶', phoenix: '🦚', dragon: '🐉' };
@@ -322,6 +324,13 @@ function renderMyHand() {
   document.getElementById('my-hand-count').textContent = myHand.length;
   for (const card of sortHand(myHand)) {
     const el = createCardEl(card, true);
+    const fromAvatar = _receivedFromAvatar.get(card.id);
+    if (fromAvatar) {
+      const badge = document.createElement('div');
+      badge.className = 'card-from';
+      badge.textContent = fromAvatar;
+      el.appendChild(badge);
+    }
     el.addEventListener('click', () => toggleSelect(card, el));
     if (selectedIds.has(card.id)) el.classList.add('selected');
     container.appendChild(el);
@@ -1058,7 +1067,6 @@ function showTrickWonToast(winnerId, pts) {
     sfxTrickWon();
     _lastTrickSfxAt = now;
   }
-  if (_aiFastMode) return; // skip toast in fast mode — too many stack up
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast';
   const name = getPlayerName(winnerId);
@@ -1066,7 +1074,7 @@ function showTrickWonToast(winnerId, pts) {
     ? `${name} ${pts > 0 ? '+' : ''}${pts}점 획득!`
     : `${name} 먹음`;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 1800);
+  setTimeout(() => toast.remove(), _aiFastMode ? 320 : 1800);
 }
 
 function showWarnToast(msg) {
@@ -1245,12 +1253,15 @@ function showReceivedCards(r) {
     { relSeat: (seat + 1) % 4, key: 'right',  label: '오른쪽' },
   ];
 
+  _receivedFromAvatar.clear();
   const received = sources.map(({ relSeat, key, label }) => {
     const sender = players.find(p => p.seat === relSeat);
     if (!sender) return null;
     const card = r.exchangeCards[sender.id]?.[key];
     if (!card) return null;
-    return { card, senderName: sender.name, senderAvatar: sender.avatar || '🙂', label };
+    const avatar = sender.avatar || '🙂';
+    _receivedFromAvatar.set(card.id, avatar); // remember for hand rendering
+    return { card, senderName: sender.name, senderAvatar: avatar, label };
   }).filter(Boolean);
 
   if (received.length === 0) return;
