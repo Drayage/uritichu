@@ -18,18 +18,18 @@
   <div id="game-root">
     <!-- Top bar -->
     <div id="top-bar">
-      <div style="display:flex; align-items:center; gap:10px;">
-        <span style="font-size:22px;">🀄</span>
-        <span style="font-weight:800; color:var(--lavender-dark);">우리 티츄</span>
+      <div class="top-logo">
+        <span class="top-logo-icon">🀄</span>
+        <span class="top-logo-text">우리 티츄</span>
       </div>
       <div id="status-bar">대기 중...</div>
-      <div style="display:flex; align-items:center; gap:10px;">
-        <div id="wish-indicator">⭐ 소원: <span id="wish-rank-text"></span></div>
+      <div class="top-actions">
+        <div id="wish-indicator">⭐ <span class="top-label">소원: </span><span id="wish-rank-text"></span></div>
         <button class="btn btn-secondary" id="btn-tichu" style="display:none; font-size:13px; padding:8px 14px;">티츄!</button>
-        <button class="btn btn-ghost btn-mute" id="btn-mute" style="font-size:13px; padding:6px 12px;" onclick="window._toggleMute()">🔊</button>
-        <button class="btn btn-ghost" id="btn-speed" style="font-size:13px; padding:6px 12px; display:none;" onclick="window._toggleAISpeed()">▶▶ 배속</button>
-        <button class="btn btn-ghost" id="btn-rules" style="font-size:13px; padding:6px 12px;" onclick="document.getElementById('modal-rules').style.display='flex'">❓ 룰</button>
-        <button class="btn btn-ghost btn-surrender" style="font-size:13px; padding:6px 12px;" onclick="window._showSurrenderModal()">🏳️</button>
+        <button class="btn btn-ghost btn-mute" id="btn-mute" onclick="window._toggleMute()">🔊</button>
+        <button class="btn btn-ghost" id="btn-speed" style="display:none;" onclick="window._toggleAISpeed()">▶▶<span class="top-label"> 배속</span></button>
+        <button class="btn btn-ghost" id="btn-rules" onclick="document.getElementById('modal-rules').style.display='flex'">❓<span class="top-label"> 룰</span></button>
+        <button class="btn btn-ghost btn-surrender" onclick="window._showSurrenderModal()">🏳️</button>
       </div>
     </div>
 
