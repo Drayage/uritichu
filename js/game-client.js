@@ -373,6 +373,16 @@ function toggleSelect(card, el) {
   else { selectedIds.add(card.id); el.classList.add('selected'); }
   updateSelectedInfo();
   updateCombinableHighlight();
+  // On lead turn: clear 'playable' glow once a card is selected; restore when all deselected
+  const r = currentGs?.currentRound;
+  const isLead = r && !r.currentTrick?.winningCombo;
+  if (isLead) {
+    if (selectedIds.size > 0) {
+      document.querySelectorAll('#my-hand .card.playable').forEach(e => e.classList.remove('playable'));
+    } else {
+      updatePlayableHighlight(r.currentTrick);
+    }
+  }
 }
 
 function comboLabel(combo) {
