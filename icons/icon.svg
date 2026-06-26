@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#c9b8f5"/>
+      <stop offset="100%" stop-color="#5830a0"/>
+    </linearGradient>
+    <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1" gradientUnits="objectBoundingBox">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#e8e0ff" stop-opacity="0.55"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 배경 (rounded square) -->
+  <rect width="512" height="512" rx="96" ry="96" fill="url(#bg)"/>
+
+  <!-- 장식: 작은 카드 문양 -->
+  <circle cx="88"  cy="88"  r="28" fill="#ffffff" opacity="0.12"/>
+  <circle cx="424" cy="424" r="28" fill="#ffffff" opacity="0.12"/>
+  <circle cx="424" cy="88"  r="18" fill="#b2f0e0" opacity="0.25"/>
+  <circle cx="88"  cy="424" r="18" fill="#b2f0e0" opacity="0.25"/>
+
+  <!-- 새 꼬리 (가장 아래) -->
+  <path d="M210,360 Q230,408 256,422 Q282,408 302,360 Q278,382 256,384 Q234,382 210,360Z" fill="#ede8ff"/>
+
+  <!-- 새 몸통 -->
+  <ellipse cx="256" cy="298" rx="98" ry="83" fill="white"/>
+
+  <!-- 날개 (왼쪽) -->
+  <path d="M163,288 Q100,248 80,308 Q100,372 170,340 Q206,316 207,289Z" fill="url(#wing)"/>
+  <!-- 날개 (오른쪽) -->
+  <path d="M349,288 Q412,248 432,308 Q412,372 342,340 Q306,316 305,289Z" fill="url(#wing)"/>
+
+  <!-- 새 머리 -->
+  <circle cx="256" cy="198" r="68" fill="white"/>
+
+  <!-- 볼 (귀여운 핑크 볼터치) -->
+  <ellipse cx="226" cy="218" rx="18" ry="12" fill="#ffb3c6" opacity="0.55"/>
+
+  <!-- 부리 -->
+  <path d="M296,210 L336,220 L296,230Z" fill="#ffb3c6"/>
+
+  <!-- 눈 흰자 -->
+  <circle cx="278" cy="188" r="22" fill="#6040b0"/>
+  <!-- 눈동자 -->
+  <circle cx="278" cy="188" r="12" fill="white"/>
+  <!-- 눈 속 검은 동공 -->
+  <circle cx="280" cy="188" r="6" fill="#2a1060"/>
+  <!-- 반짝임 -->
+  <circle cx="276" cy="184" r="3" fill="white"/>
+
+  <!-- 민트 포인트 (발톱 힌트) -->
+  <ellipse cx="230" cy="374" rx="12" ry="7" fill="#b2f0e0" opacity="0.9"/>
+  <ellipse cx="282" cy="374" rx="12" ry="7" fill="#b2f0e0" opacity="0.9"/>
+
+  <!-- 하단 민트 장식 -->
+  <circle cx="148" cy="440" r="16" fill="#b2f0e0" opacity="0.75"/>
+  <circle cx="364" cy="440" r="16" fill="#b2f0e0" opacity="0.75"/>
+</svg>
