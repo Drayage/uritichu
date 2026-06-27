@@ -54,6 +54,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         const newGs = { players: room.players, totalScores: { team0: 0, team1: 0 }, rounds: [], currentRound: null, phase: 'deal_8', gameOver: false, winningTeam: null, targetScore: 1000 };
         startRound(newGs);
         await saveGameState(myRoomId, newGs);
+        await setRoomPhase(myRoomId, 'playing');
         return;
       }
     }
