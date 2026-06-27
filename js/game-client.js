@@ -7,7 +7,7 @@ import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame
 
 // Bump alongside the SW cache version each deploy; embedded into replay records
 // so an export reveals which build the game was actually played on.
-const APP_VERSION = 'v20';
+const APP_VERSION = 'v21';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -997,13 +997,8 @@ function showRoundOverModal(r, totalScores) {
         : '<span class="tichu-badge tichu-fail">🎯 티츄 실패 -100</span>';
     }
     const place = isDnf ? '💀' : placeEmoji[i];
-    // Finishers are marked 완주; the last player shows how many cards they were
-    // stuck with (남은 패 장수).
-    const leftCount = r.lastPlayerHand?.length ?? 0;
-    const statusTag = isDnf
-      ? ` <span class="result-dnf">미완주 · ${leftCount}장 남음</span>`
-      : ' <span class="result-done">완주</span>';
-    return `<div class="result-row${isDnf ? ' result-row-dim' : ''}"><span>${place} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${statusTag}${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
+    const dnfTag = isDnf ? ' <span class="result-dnf">꼴등·미완주</span>' : '';
+    return `<div class="result-row${isDnf ? ' result-row-dim' : ''}"><span>${place} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${dnfTag}${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
   }).join('');
 
   // One-two (따당): the losing team never finished — list them as 미완주 instead
