@@ -7,6 +7,11 @@ let _rec = null;
 let _viewGame = null;
 let _viewRound = 0;
 let _viewTrick = 0; // -1 = initial hands
+let _buildInfo = {}; // { appVersion, swCache, mode } — embedded so an export reveals the build
+
+// Called once by game-client at startup so each recording carries the build it
+// was played on (visible in the export, not shown in-game).
+export function setBuildInfo(info) { _buildInfo = info || {}; }
 
 // ── Recording API ──
 
@@ -14,6 +19,7 @@ export function startRecording(players) {
   _rec = {
     id: Date.now().toString(),
     date: new Date().toISOString(),
+    build: { ..._buildInfo, recordedAt: new Date().toISOString() },
     players: players.map(p => ({
       id: p.id, name: p.name, avatar: p.avatar || '🙂',
       teamIndex: p.teamIndex, seat: p.seat
@@ -184,6 +190,8 @@ function showList() {
     let winLabel = game.winner === 'A' ? '🏆 팀A 승' : game.winner === 'B' ? '🏆 팀B 승' : '무승부';
     if (game.surrendered) winLabel = '🏳️ 중단';
     if (game.imported) winLabel = '📥 ' + winLabel;
+    const b = game.build || {};
+    const buildStr = b.appVersion ? `${b.appVersion}${b.mode ? '·' + b.mode : ''}` : '구버전';
 
     const item = document.createElement('div');
     item.className = 'replay-list-item';
@@ -191,6 +199,7 @@ function showList() {
       <div class="replay-item-top">
         <span class="replay-date">${dateStr}</span>
         <span class="replay-win-label">${winLabel}</span>
+        <span class="replay-build">${buildStr}</span>
         <span class="replay-rounds-count">${game.rounds.length}라운드</span>
       </div>
       <div class="replay-item-bottom">
