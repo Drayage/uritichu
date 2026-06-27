@@ -84,10 +84,17 @@ export async function onRoomStateChange(roomData, myId) {
     const active = gs.players.find(p => p.id === r.activePlayerId);
     if (active?.isAI) {
       _armWatchdog(active.id);
+      // Extra pause when an AI is about to LEAD right after winning a trick, so
+      // the "trick won" result is visible before the next card flies out.
+      const leadingAfterTrick =
+        (!r.currentTrick || (r.currentTrick.plays?.length ?? 0) === 0) &&
+        (r.pastTricks?.length || 0) > 0;
+      const base = _fastMode ? 380 : 1500;
+      const delay = leadingAfterTrick ? base + (_fastMode ? 550 : 1000) : base;
       await _runWithDelay(async () => {
         _clearWatchdog();
         await _applyAIMove(active.id);
-      }, _fastMode ? 380 : 1500);
+      }, delay);
     } else {
       _clearWatchdog();
     }

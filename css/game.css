@@ -11,14 +11,35 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   width: 100vw;
   height: 100vh;
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   grid-template-columns: 1fr 240px;
   grid-template-areas:
     "top-bar top-bar"
+    "hud     hud"
     "table   sidebar"
     "hand    sidebar";
   gap: 0;
 }
+
+#hud-bar {
+  grid-area: hud;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 5px 12px;
+  background: rgba(255,255,255,0.55);
+  border-bottom: 1px solid rgba(201,184,245,0.3);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-light);
+  white-space: nowrap;
+}
+#hud-bar .hud-label { font-weight: 700; opacity: 0.7; }
+#hud-bar .hud-sep, #hud-bar .hud-vs { opacity: 0.4; }
+#hud-bar .hud-team-a { color: var(--mint-dark); }
+#hud-bar .hud-team-b { color: var(--lavender-dark); }
+#hud-bar .hud-item { font-variant-numeric: tabular-nums; }
 
 #top-bar {
   grid-area: top-bar;
@@ -1007,14 +1028,15 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   #game-root {
     height: var(--app-height, 100dvh);
     grid-template-columns: 1fr;
-    grid-template-areas: "top-bar" "table" "hand";
+    grid-template-areas: "top-bar" "hud" "table" "hand";
     /* hand row sizes to its content so cards + buttons always fit.
        minmax(0,1fr) lets the table SHRINK below its content min-height —
        a plain 1fr (= minmax(auto,1fr)) would push the hand row (and its
        buttons) off the bottom of the screen. */
-    grid-template-rows: 48px minmax(0, 1fr) auto;
+    grid-template-rows: 48px auto minmax(0, 1fr) auto;
   }
   #sidebar { display: none; }
+  #hud-bar { padding: 4px 10px; font-size: 12px; gap: 6px; }
 
   /* Top bar: single compact row */
   #top-bar {
@@ -1145,7 +1167,7 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 }
 
 @media (max-width: 380px) {
-  #game-root { grid-template-rows: 48px minmax(0, 1fr) auto; }
+  #game-root { grid-template-rows: 48px auto minmax(0, 1fr) auto; }
   .card { width: 40px; height: 57px; }
   .card-rank-top, .card-rank-bot { font-size: 9px; }
   .card-suit { font-size: 15px; }
