@@ -1,7 +1,7 @@
 // ── Replay Recording & Viewing ──
 
 const STORAGE_KEY = 'tichu_replays';
-const MAX_GAMES = 5;
+const MAX_GAMES = 20;
 
 let _rec = null;
 let _viewGame = null;
@@ -59,11 +59,15 @@ export function recordRoundEnd(scoreDeltas, finishOrder) {
   round.finishOrder = [...(finishOrder || [])];
 }
 
-export function saveGame(totalScores) {
+export function saveGame(totalScores, opts = {}) {
   if (!_rec) return;
   const a = totalScores?.team0 ?? 0, b = totalScores?.team1 ?? 0;
   _rec.finalScores = { teamA: a, teamB: b };
   _rec.winner = a > b ? 'A' : b > a ? 'B' : 'tie';
+  if (opts.surrendered) _rec.surrendered = true;
+  // Attach the raw live game state (active player, hands, finishOrder, …) so a
+  // surrendered/bug game can be reproduced exactly from the export.
+  if (opts.debugState) { try { _rec.debugState = JSON.parse(JSON.stringify(opts.debugState)); } catch (e) {} }
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     saved.unshift(_rec);
@@ -75,6 +79,44 @@ export function saveGame(totalScores) {
 
 export function loadGames() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+// ── Export / Import (share a record so bugs can be reproduced) ──
+export function exportGame(game) {
+  try {
+    const blob = new Blob([JSON.stringify(game, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const d = new Date(game.date || Date.now());
+    const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}_${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tichu-replay-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  } catch (e) { alert('내보내기 실패: ' + e.message); }
+}
+
+function _isValidGame(g) {
+  return g && Array.isArray(g.players) && Array.isArray(g.rounds);
+}
+
+export function importGamesFromText(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw new Error('JSON을 읽을 수 없어요'); }
+  const incoming = Array.isArray(data) ? data : [data];
+  const valid = incoming.filter(_isValidGame);
+  if (valid.length === 0) throw new Error('유효한 기록이 아니에요');
+  const saved = loadGames();
+  for (const g of valid) {
+    g.imported = true;
+    if (!g.id) g.id = Date.now().toString() + Math.random().toString(36).slice(2, 5);
+    if (!saved.find(s => s.id === g.id)) saved.unshift(g);
+  }
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(saved.slice(0, MAX_GAMES))); }
+  catch (e) { throw new Error('저장 실패 (용량 초과?)'); }
+  return valid.length;
 }
 
 // ── UI ──
@@ -96,8 +138,39 @@ function showList() {
   const list = document.getElementById('replay-game-list');
   list.innerHTML = '';
 
+  // Toolbar: import a record file
+  const toolbar = document.createElement('div');
+  toolbar.className = 'replay-toolbar';
+  const importBtn = document.createElement('button');
+  importBtn.className = 'replay-import-btn';
+  importBtn.textContent = '📥 기록 불러오기';
+  const fileInput = document.createElement('input');
+  fileInput.type = 'file';
+  fileInput.accept = 'application/json,.json';
+  fileInput.style.display = 'none';
+  importBtn.onclick = () => fileInput.click();
+  fileInput.onchange = () => {
+    const file = fileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const n = importGamesFromText(String(reader.result));
+        showList();
+        alert(`${n}개 기록을 불러왔어요.`);
+      } catch (e) { alert('불러오기 실패: ' + e.message); }
+    };
+    reader.readAsText(file);
+  };
+  toolbar.appendChild(importBtn);
+  toolbar.appendChild(fileInput);
+  list.appendChild(toolbar);
+
   if (!games.length) {
-    list.innerHTML = '<div class="replay-empty">아직 완료된 게임 기록이 없습니다.<br>게임을 완료하면 자동 저장됩니다.</div>';
+    const empty = document.createElement('div');
+    empty.className = 'replay-empty';
+    empty.innerHTML = '아직 게임 기록이 없습니다.<br>게임을 완료하거나 항복하면 저장돼요.';
+    list.appendChild(empty);
     return;
   }
 
@@ -108,7 +181,9 @@ function showList() {
     const teamB = game.players.filter(p => p.teamIndex === 1).map(p => p.name).join('+');
     const sA = game.finalScores?.teamA ?? '?';
     const sB = game.finalScores?.teamB ?? '?';
-    const winLabel = game.winner === 'A' ? '🏆 팀A 승' : game.winner === 'B' ? '🏆 팀B 승' : '무승부';
+    let winLabel = game.winner === 'A' ? '🏆 팀A 승' : game.winner === 'B' ? '🏆 팀B 승' : '무승부';
+    if (game.surrendered) winLabel = '🏳️ 중단';
+    if (game.imported) winLabel = '📥 ' + winLabel;
 
     const item = document.createElement('div');
     item.className = 'replay-list-item';
@@ -125,6 +200,13 @@ function showList() {
       </div>
     `;
     item.onclick = () => openDetail(game);
+
+    const exportBtn = document.createElement('button');
+    exportBtn.className = 'replay-export-btn';
+    exportBtn.textContent = '📤 내보내기';
+    exportBtn.onclick = (e) => { e.stopPropagation(); exportGame(game); };
+    item.appendChild(exportBtn);
+
     list.appendChild(item);
   });
 }

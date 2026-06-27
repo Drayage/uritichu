@@ -1143,6 +1143,22 @@ function showSurrenderModal() {
   showModal('modal-surrender');
 }
 window._showSurrenderModal = showSurrenderModal;
+
+// Save the in-progress game to records (marked 중단) with a snapshot of the
+// live state for bug analysis, then return to the lobby.
+window._surrenderAndExit = () => {
+  try {
+    if (_replayActive) {
+      saveGame(currentGs?.totalScores || { team0: 0, team1: 0 },
+        { surrendered: true, debugState: currentGs });
+      _replayActive = false;
+    }
+  } catch (e) { /* never block the exit on a save error */ }
+  // Clear session so the lobby starts fresh (no stale room/solo state).
+  ['playerId', 'roomId', 'isHost', 'autoStart', 'soloMode', 'soloPlayers', 'soloGameState']
+    .forEach(k => sessionStorage.removeItem(k));
+  location.href = './index.html';
+};
 window._toggleAISpeed = () => {
   _aiFastMode = !_aiFastMode;
   setAIFastMode(_aiFastMode);

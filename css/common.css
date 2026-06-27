@@ -145,6 +145,24 @@ button:active { transform: scale(0.96); }
 #replay-list-view { overflow-y: auto; padding: 10px 14px 14px; flex: 1; }
 #replay-game-list { display: flex; flex-direction: column; gap: 8px; }
 .replay-empty { text-align: center; color: var(--text-light); padding: 32px 16px; font-size: 13px; line-height: 1.7; }
+.replay-toolbar { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+.replay-import-btn {
+  background: rgba(160,142,232,0.15);
+  border: 1.5px solid rgba(160,142,232,0.35);
+  color: var(--lavender-dark);
+  border-radius: 10px; padding: 7px 14px; cursor: pointer;
+  font-size: 13px; font-weight: 700;
+}
+.replay-import-btn:hover { background: rgba(160,142,232,0.25); }
+.replay-export-btn {
+  margin-top: 8px;
+  background: rgba(178,240,224,0.25);
+  border: 1.5px solid rgba(120,200,180,0.4);
+  color: var(--mint-dark, #2c8c74);
+  border-radius: 9px; padding: 5px 12px; cursor: pointer;
+  font-size: 12px; font-weight: 700;
+}
+.replay-export-btn:hover { background: rgba(178,240,224,0.45); }
 .replay-list-item {
   background: rgba(255,255,255,0.7);
   border: 1.5px solid rgba(201,184,245,0.3);
