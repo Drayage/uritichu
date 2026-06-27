@@ -98,6 +98,7 @@ document.getElementById('btn-start').addEventListener('click', () => {
 
 // Copy room code
 document.getElementById('btn-replay').addEventListener('click', () => openReplayModal());
+document.getElementById('btn-replay-main')?.addEventListener('click', () => openReplayModal());
 window._closeReplayModal = closeReplayModal;
 window._replayPrev = replayPrev;
 window._replayNext = replayNext;

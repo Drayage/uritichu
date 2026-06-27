@@ -292,7 +292,7 @@
       <h2>항복할까요?</h2>
       <p>로비로 돌아갑니다. 진행 중인 게임에서 나가게 돼요.</p>
       <div style="display:flex; gap:10px; margin-top:4px;">
-        <button class="btn btn-danger btn-full" onclick="location.href='./index.html'">나가기</button>
+        <button class="btn btn-danger btn-full" onclick="window._surrenderAndExit ? window._surrenderAndExit() : location.href='./index.html'">나가기</button>
         <button class="btn btn-secondary btn-full" onclick="document.getElementById('modal-surrender').style.display='none'">취소</button>
       </div>
     </div>
