@@ -83,39 +83,50 @@ export async function onRoomStateChange(roomData, myId) {
     if (r.finishOrder.includes(r.activePlayerId)) return;
     const active = gs.players.find(p => p.id === r.activePlayerId);
     if (active?.isAI) {
-      _armWatchdog(active.id, gs);
+      _armWatchdog(active.id);
       await _runWithDelay(async () => {
         _clearWatchdog();
-        // Re-fetch latest state before acting — a human may have bombed during the delay window
-        const latestGs = await getLatestGameState(_roomId);
-        if (!latestGs?.currentRound || latestGs.currentRound.activePlayerId !== active.id) return;
-
-        const fresh = JSON.parse(JSON.stringify(latestGs));
-        let action = decideAction(fresh, active.id);
-
-        // Tichu call: do it then immediately decide the actual play in same save
-        if (action?.action === 'tichu') {
-          callTichu(fresh, active.id);
-          action = decideAction(fresh, active.id);
-        }
-
-        if (!action || action.action === 'pass') {
-          const result = pass(fresh, active.id);
-          if (result?.error) console.warn('[HostRunner] pass error:', result.error);
-        } else if (action.action === 'play') {
-          const result = playCards(fresh, active.id, action.data.combination, action.data.wishRank || null);
-          if (result?.error) {
-            console.warn('[HostRunner] play error, falling back to pass:', result.error);
-            pass(fresh, active.id);
-          }
-        }
-
-        await saveGameState(_roomId, fresh);
+        await _applyAIMove(active.id);
       }, _fastMode ? 380 : 1500);
     } else {
       _clearWatchdog();
     }
   }
+}
+
+// Re-fetch the latest committed state, decide for `playerId`, apply, and save.
+// Always works off fresh state (never a stale snapshot), so it can't clobber
+// newer state, and it makes the CORRECT move instead of a blind pass. The
+// seq-guarded saveGameState rejects the write if the state moved on meanwhile.
+async function _applyAIMove(playerId) {
+  const latestGs = await getLatestGameState(_roomId);
+  const r = latestGs?.currentRound;
+  if (!r || r.phase !== PHASE.PLAY) return;
+  if (r.activePlayerId !== playerId) return;            // turn moved on — do nothing
+  if ((r.finishOrder || []).includes(playerId)) return; // already finished
+
+  const fresh = JSON.parse(JSON.stringify(latestGs));
+  let action = decideAction(fresh, playerId);
+
+  // Tichu call: do it then immediately decide the actual play in the same save
+  if (action?.action === 'tichu') {
+    callTichu(fresh, playerId);
+    action = decideAction(fresh, playerId);
+  }
+
+  if (!action || action.action === 'pass') {
+    const result = pass(fresh, playerId);
+    if (result?.error) { console.warn('[HostRunner] pass error:', result.error); return; }
+  } else if (action.action === 'play') {
+    const result = playCards(fresh, playerId, action.data.combination, action.data.wishRank || null);
+    if (result?.error) {
+      console.warn('[HostRunner] play error, falling back to pass:', result.error);
+      const pres = pass(fresh, playerId);
+      if (pres?.error) return;
+    }
+  }
+
+  await saveGameState(_roomId, fresh);
 }
 
 async function _runWithDelay(fn, delay = 900) {
@@ -139,26 +150,23 @@ async function _runWithDelay(fn, delay = 900) {
   }
 }
 
-function _armWatchdog(playerId, gs) {
+function _armWatchdog(playerId) {
   if (_watchdogForId === playerId) return;  // already watching this player
   _clearWatchdog();
   _watchdogForId = playerId;
   _watchdogTimer = setTimeout(async () => {
-    console.warn('[HostRunner] Watchdog: AI stuck for 10s, forcing pass for', playerId);
+    console.warn('[HostRunner] Watchdog: AI stuck, recovering for', playerId);
     _running = false;
     _watchdogForId = null;
     _watchdogTimer = null;
     try {
-      const fresh = JSON.parse(JSON.stringify(gs));
-      const r = fresh.currentRound;
-      if (r.activePlayerId === playerId) {
-        pass(fresh, playerId);
-        await saveGameState(_roomId, fresh);
-      }
+      // Recover off FRESH state with the proper decision — never a stale
+      // snapshot or a blind pass (which would wrongly pass a playable hand).
+      await _applyAIMove(playerId);
     } catch (e) {
-      console.error('[HostRunner] Watchdog save error:', e);
+      console.error('[HostRunner] Watchdog recovery error:', e);
     }
-  }, 10000);
+  }, 6000);
 }
 
 function _clearWatchdog() {

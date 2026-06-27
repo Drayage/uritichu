@@ -1,4 +1,4 @@
-import { db, ref, set, update, get, onValue, remove } from './firebase-app.js';
+import { db, ref, set, update, get, onValue, remove, runTransaction } from './firebase-app.js';
 
 function genRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -79,9 +79,21 @@ async function fillWithAI(roomId) {
   }
 }
 
-// Write game state as JSON string (avoids RTDB null-stripping issues)
+// Write game state as JSON string (avoids RTDB null-stripping issues).
+// Uses a seq-guarded transaction: the write only commits if the stored state
+// still has the same seq the caller based its action on. This rejects stale /
+// duplicate writes (online race), preventing "plays getting eaten" and the
+// double-apply that skips the trick winner's lead. Returns true if committed.
 async function saveGameState(roomId, gameState) {
-  await update(roomRef(roomId), { gameStateJson: JSON.stringify(gameState), phase: 'playing' });
+  const baseSeq = gameState.seq || 0;
+  const gsRef = ref(db, `tichu/rooms/${roomId}/gameStateJson`);
+  const res = await runTransaction(gsRef, (currentJson) => {
+    let curSeq = 0;
+    if (currentJson) { try { curSeq = JSON.parse(currentJson).seq || 0; } catch (e) { curSeq = 0; } }
+    if (curSeq !== baseSeq) return; // abort: someone already advanced the state
+    return JSON.stringify({ ...gameState, seq: baseSeq + 1 });
+  });
+  return !!res.committed;
 }
 
 async function setRoomPhase(roomId, phase) {
