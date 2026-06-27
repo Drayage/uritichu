@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE = 'uritichu-v15';
+const CACHE = 'uritichu-v16';
 
 // Resolve precache paths relative to this SW's scope so the same
 // sw.js works both at "/" (Express) and at "/uritichu/" (GitHub Pages).
