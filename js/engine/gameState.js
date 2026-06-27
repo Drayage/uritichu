@@ -259,9 +259,19 @@ function endRound(gameState) {
   const r = gameState.currentRound;
   r.phase = PHASE.ROUND_OVER;
   const allIds = gameState.players.map(p => p.id);
-  const lastPlayer = allIds.find(id => !r.finishOrder.includes(id));
-  if (lastPlayer) r.finishOrder.push(lastPlayer);
-  r.lastPlayerHand = r.hands[lastPlayer] || [];
+  // One-two (따당): the first two finishers are the same team — the round ends
+  // early and the OTHER team never finished. Don't fabricate a 3rd/4th place;
+  // leave finishOrder as the two real finishers so the UI doesn't show a
+  // non-finisher as 완주. (scoreRound awards the flat +200 and ignores hands.)
+  const fp1 = gameState.players.find(p => p.id === r.finishOrder[0]);
+  const fp2 = gameState.players.find(p => p.id === r.finishOrder[1]);
+  const isOneTwo = fp1 && fp2 && fp1.teamIndex === fp2.teamIndex;
+  let lastPlayer = null;
+  if (!isOneTwo) {
+    lastPlayer = allIds.find(id => !r.finishOrder.includes(id));
+    if (lastPlayer) r.finishOrder.push(lastPlayer);
+  }
+  r.lastPlayerHand = lastPlayer ? (r.hands[lastPlayer] || []) : [];
   const deltas = scoreRound({
     finishOrder: r.finishOrder, trickWinners: r.trickWinners,
     hands: { [lastPlayer]: r.lastPlayerHand },

@@ -977,6 +977,16 @@ function showRoundOverModal(r, totalScores) {
     return `<div class="result-row"><span>${placeEmoji[i]} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
   }).join('');
 
+  // One-two (따당): the losing team never finished — list them as 미완주 instead
+  // of fabricating a 3rd/4th placement.
+  let loserRows = '';
+  if (isTadak) {
+    loserRows = players
+      .filter(p => !r.finishOrder.includes(p.id))
+      .map(p => `<div class="result-row result-row-dim"><span>— ${escHtml(p.name)} <span class="result-team">${teamLabel(p.teamIndex)}</span> <span class="result-dnf">미완주</span></span><span class="result-pts">-</span></div>`)
+      .join('');
+  }
+
   // Scoring notes
   let notes = '';
   if (isTadak) {
@@ -1001,6 +1011,7 @@ function showRoundOverModal(r, totalScores) {
   el.innerHTML = `
     <div class="result-header">개인 획득 트릭점수</div>
     ${finishRows}
+    ${loserRows}
     ${notes ? `<div class="result-notes">${notes}</div>` : ''}
     ${deltaHtml}
     <div class="result-total">🌿 팀 A <b>${totalScores.team0}점</b> &nbsp;·&nbsp; 💜 팀 B <b>${totalScores.team1}점</b></div>
