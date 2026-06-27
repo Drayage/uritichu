@@ -302,6 +302,26 @@
 
   <script type="module" src="js/game-client.js"></script>
   <script>
+    // Mobile viewport-height fix: some browsers report a wrong 100dvh at first
+    // paint, so the bottom action buttons land below the fold until an
+    // app-switch/resize forces a re-measure. Drive layout height from the real
+    // window.innerHeight and refresh it on every relevant event.
+    (function () {
+      function setH() {
+        document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+      }
+      setH();
+      addEventListener('resize', setH);
+      addEventListener('orientationchange', setH);
+      addEventListener('pageshow', setH);
+      document.addEventListener('visibilitychange', setH);
+      // Re-measure after first paints settle (URL-bar collapse, PWA chrome, etc.)
+      requestAnimationFrame(setH);
+      setTimeout(setH, 300);
+      setTimeout(setH, 1000);
+    })();
+  </script>
+  <script>
     if ('serviceWorker' in navigator) {
       // Auto-reload once when an updated service worker takes control, so
       // code fixes actually reach the page without a manual double-refresh.

@@ -1000,11 +1000,12 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  /* Use dynamic viewport height (accounts for mobile browser chrome) */
-  html { height: 100dvh; }
-  body { height: 100dvh; overflow: hidden; }
+  /* Height comes from JS (window.innerHeight via --app-height) because some
+     mobile browsers mis-measure 100dvh on first paint; 100dvh is the fallback. */
+  html { height: var(--app-height, 100dvh); }
+  body { height: var(--app-height, 100dvh); overflow: hidden; }
   #game-root {
-    height: 100dvh;
+    height: var(--app-height, 100dvh);
     grid-template-columns: 1fr;
     grid-template-areas: "top-bar" "table" "hand";
     /* hand row sizes to its content so cards + buttons always fit.
