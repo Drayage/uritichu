@@ -3,7 +3,11 @@ import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, sfxError, sfxExchange, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
-import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame } from './replay.js';
+import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame, setBuildInfo } from './replay.js';
+
+// Bump alongside the SW cache version each deploy; embedded into replay records
+// so an export reveals which build the game was actually played on.
+const APP_VERSION = 'v19';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -40,11 +44,27 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Solo mode runs entirely in-memory (no Firebase). Set up the local room
   // from the config the lobby stashed before navigating here.
-  if (sessionStorage.getItem('soloMode') === 'true') {
+  const soloMode = sessionStorage.getItem('soloMode') === 'true';
+  if (soloMode) {
     const soloPlayers = JSON.parse(sessionStorage.getItem('soloPlayers') || '[]');
     const savedSolo = sessionStorage.getItem('soloGameState') || '';
     if (soloPlayers.length === 4) initLocalRoom(soloPlayers, myPlayerId, savedSolo);
   }
+
+  // Embed the build into replay records (visible in exports). Set version+mode
+  // synchronously so it's captured even when recording starts immediately; fill
+  // in the actual SW cache name once the async lookup resolves.
+  setBuildInfo({ appVersion: APP_VERSION, mode: soloMode ? 'solo' : 'online', swCache: 'pending' });
+  (async () => {
+    let swCache = 'none';
+    try {
+      if ('caches' in window) {
+        const keys = await caches.keys();
+        swCache = keys.find(k => k.startsWith('uritichu-')) || 'none';
+      }
+    } catch (e) {}
+    setBuildInfo({ appVersion: APP_VERSION, mode: soloMode ? 'solo' : 'online', swCache });
+  })();
 
   sessionStorage.removeItem('autoStart');
   setupButtonListeners();
@@ -1069,9 +1089,19 @@ function detectStateEffects(prev, curr) {
     }
   }
 
-  // Dog: lead changed without a trick being added to pastTricks
+  // Dog: lead changed without a trick being added to pastTricks. The dog play
+  // never lands in a trick object, so record a synthetic one so the replay's
+  // card count stays complete (1 card moved from the dog player's hand).
   if (cr.leadPlayerId !== pr.leadPlayerId && currPast === prevPast) {
+    const dogPlayer = pr.activePlayerId;
     showDogToast(cr.leadPlayerId);
+    if (dogPlayer) {
+      recordTrick({
+        leadPlayerId: dogPlayer,
+        winnerId: cr.leadPlayerId,
+        plays: [{ playerId: dogPlayer, combination: { cards: [{ id: 'dog_' + Date.now(), rank: 'dog', isSpecial: true, numericValue: 0, pointValue: 0 }] } }],
+      });
+    }
   }
 
   // Detect pass: passCount went up (regular pass — last pass is handled in trick-won block)

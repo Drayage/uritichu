@@ -173,6 +173,7 @@ button:active { transform: scale(0.96); }
 .replay-item-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
 .replay-date { font-size: 11px; color: var(--text-light); }
 .replay-win-label { font-size: 12px; font-weight: 700; color: var(--lavender-dark); flex: 1; }
+.replay-build { font-size: 10px; font-weight: 700; color: var(--text-light); background: rgba(201,184,245,0.18); border-radius: 6px; padding: 1px 6px; }
 .replay-rounds-count { font-size: 11px; color: var(--text-light); }
 .replay-item-bottom { display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 700; }
 .replay-score-mid { color: var(--text); background: rgba(201,184,245,0.2); border-radius: 6px; padding: 1px 7px; }
