@@ -63,21 +63,25 @@ document.getElementById('btn-join').addEventListener('click', async () => {
   } catch (e) { showError(e.message); }
 });
 
-// Solo mode
-document.getElementById('btn-solo').addEventListener('click', async () => {
+// Solo mode — fully local (no Firebase): immune to online races, faster, offline.
+const SOLO_AI_NAMES = ['냥이', '토순이', '곰돌이', '여우'];
+const SOLO_AI_AVATARS = ['🐱', '🐰', '🐻', '🦊'];
+document.getElementById('btn-solo').addEventListener('click', () => {
   const name = document.getElementById('input-solo-name').value.trim() || '나';
-  try {
-    const { roomId, playerId } = await createRoom(name, selectedAvatar);
-    myPlayerId = playerId;
-    myRoomId = roomId;
-    sessionStorage.setItem('playerId', playerId);
-    sessionStorage.setItem('roomId', roomId);
-    sessionStorage.setItem('isHost', 'true');
-    await fillWithAI(roomId);
-    // Start immediately by navigating to game (host will start round)
-    sessionStorage.setItem('autoStart', 'true');
-    window.location.href = './game.html';
-  } catch (e) { showError(e.message); }
+  const players = [
+    { id: 'me', name, seat: 0, teamIndex: 0, isAI: false, avatar: selectedAvatar },
+    { id: 'ai_1', name: SOLO_AI_NAMES[1], seat: 1, teamIndex: 1, isAI: true, avatar: SOLO_AI_AVATARS[1] },
+    { id: 'ai_2', name: SOLO_AI_NAMES[2], seat: 2, teamIndex: 0, isAI: true, avatar: SOLO_AI_AVATARS[2] },
+    { id: 'ai_3', name: SOLO_AI_NAMES[3], seat: 3, teamIndex: 1, isAI: true, avatar: SOLO_AI_AVATARS[3] },
+  ];
+  sessionStorage.removeItem('soloGameState'); // fresh game
+  sessionStorage.setItem('soloMode', 'true');
+  sessionStorage.setItem('soloPlayers', JSON.stringify(players));
+  sessionStorage.setItem('playerId', 'me');
+  sessionStorage.setItem('roomId', 'local');
+  sessionStorage.setItem('isHost', 'true');
+  sessionStorage.setItem('autoStart', 'true');
+  window.location.href = './game.html';
 });
 
 // Add AI
