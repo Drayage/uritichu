@@ -144,7 +144,7 @@ async function saveGameState(roomId, gameState) {
     if (currentJson) { try { curSeq = JSON.parse(currentJson).seq || 0; } catch (e) { curSeq = 0; } }
     if (curSeq !== baseSeq) return; // abort: someone already advanced the state
     return JSON.stringify({ ...gameState, seq: baseSeq + 1 });
-  });
+  }, { applyLocally: false }); // only surface server-confirmed states (no optimistic flicker)
   return !!res.committed;
 }
 
