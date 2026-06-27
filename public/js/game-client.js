@@ -7,7 +7,7 @@ import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame
 
 // Bump alongside the SW cache version each deploy; embedded into replay records
 // so an export reveals which build the game was actually played on.
-const APP_VERSION = 'v21';
+const APP_VERSION = 'v22';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -1093,8 +1093,8 @@ function detectStateEffects(prev, curr) {
   // never lands in a trick object, so record a synthetic one so the replay's
   // card count stays complete (1 card moved from the dog player's hand).
   if (cr.leadPlayerId !== pr.leadPlayerId && currPast === prevPast) {
-    const dogPlayer = pr.activePlayerId;
-    showDogToast(cr.leadPlayerId);
+    const dogPlayer = cr.dogPlayerId || pr.activePlayerId;
+    showDogToast(cr.leadPlayerId, dogPlayer);
     if (dogPlayer) {
       recordTrick({
         leadPlayerId: dogPlayer,
@@ -1263,13 +1263,14 @@ function showWarnToast(msg) {
   setTimeout(() => toast.remove(), 2200);
 }
 
-function showDogToast(newLeadId) {
-  if (_aiFastMode) return;
+function showDogToast(newLeadId, dogPlayerId) {
+  sfxPass();
   const toast = document.createElement('div');
   toast.className = 'trick-won-toast dog-toast';
-  toast.textContent = `🐶 → ${getPlayerName(newLeadId)} 선공권`;
+  const who = dogPlayerId ? `${getPlayerName(dogPlayerId)} 🐶멍멍이! → ` : '🐶 → ';
+  toast.textContent = `${who}${getPlayerName(newLeadId)} 선공권`;
   document.body.appendChild(toast);
-  setTimeout(() => toast.remove(), 1800);
+  setTimeout(() => toast.remove(), _aiFastMode ? 1400 : 2000);
 }
 
 function showFinishToast(playerId, place) {

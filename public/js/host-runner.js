@@ -90,7 +90,10 @@ export async function onRoomStateChange(roomData, myId) {
         (!r.currentTrick || (r.currentTrick.plays?.length ?? 0) === 0) &&
         (r.pastTricks?.length || 0) > 0;
       const base = _fastMode ? 380 : 1500;
-      const delay = leadingAfterTrick ? base + (_fastMode ? 550 : 1000) : base;
+      let delay = leadingAfterTrick ? base + (_fastMode ? 550 : 1000) : base;
+      // A dog just handed the lead to the partner — pause so the 멍멍이 effect
+      // is visible before the partner leads (otherwise the lead seems to jump).
+      if (r.dogLeadPending) delay = Math.max(delay, base + (_fastMode ? 700 : 1200));
       await _runWithDelay(async () => {
         _clearWatchdog();
         await _applyAIMove(active.id);
