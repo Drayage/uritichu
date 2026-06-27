@@ -1090,28 +1090,32 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   #trick-area { max-width: min(290px, 88vw); padding: 6px 8px; }
   .trick-play { max-width: min(270px, 84vw); }
 
-  /* Hand area sizes to content; reserve bottom safe-area inset (home
-     indicator / browser bar) so buttons sit above it. */
+  /* Hand area sizes to content but is BOUNDED (max 58vh) so it can never grow
+     tall enough to push the buttons off-screen. Reserve the bottom safe-area
+     inset (home indicator / browser bar). */
   #hand-area {
     padding: 6px 8px calc(8px + env(safe-area-inset-bottom));
     height: auto;
-    max-height: none;
+    max-height: 58vh;
     min-height: 0;
     gap: 5px;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
-  /* Cards: content height (both wrapped rows fully visible); scroll only as a
-     safety valve for very large hands. */
+  /* Cards take remaining space and SCROLL if too tall — they yield room so the
+     action buttons below always stay visible. */
   #my-hand {
     gap: 4px;
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     min-height: 0;
-    max-height: 40vh;
+    max-height: none;
     overflow-y: auto;
     align-content: flex-start;
   }
-  .hand-actions { flex-shrink: 0; }
-  #combo-hint { flex-shrink: 0; min-height: 0; }
+  /* Buttons are pinned: never shrink, always visible. */
+  .hand-actions { flex: 0 0 auto; }
+  #combo-hint { flex: 0 0 auto; min-height: 0; }
 
   /* Cards in hand: bigger + 2 rows */
   .card { width: 46px; height: 65px; padding: 3px 2px; }
@@ -1145,7 +1149,6 @@ body { overflow: hidden; height: 100vh; background: transparent; }
   .card-rank-top, .card-rank-bot { font-size: 9px; }
   .card-suit { font-size: 15px; }
   .card-back { width: 26px; height: 38px; font-size: 11px; }
-  #my-hand { max-height: 38vh; }
 }
 
 /* ── Received cards overlay ── */
