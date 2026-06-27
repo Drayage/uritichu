@@ -7,7 +7,7 @@ import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame
 
 // Bump alongside the SW cache version each deploy; embedded into replay records
 // so an export reveals which build the game was actually played on.
-const APP_VERSION = 'v22';
+const APP_VERSION = 'v23';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -124,7 +124,22 @@ window.addEventListener('DOMContentLoaded', async () => {
     updateHud(gs, r);
     updateTichuBadges(r.tichuCalls, r.grandTichuCalls);
     updateFinishBadges(r.finishOrder);
-    renderTrick(r.currentTrick);
+
+    // Keep the last play visible at round end (currentTrick is cleared once the
+    // round ends) so the final card doesn't just vanish.
+    const roundEnded = r.phase === PHASE.ROUND_OVER || r.phase === PHASE.GAME_OVER;
+    const trickToShow = r.currentTrick
+      || (roundEnded && r.pastTricks?.length ? r.pastTricks[r.pastTricks.length - 1] : null);
+    renderTrick(trickToShow);
+
+    // Always reflect hand sizes — including the round-ending last card — so the
+    // finisher's count visibly drops to 0 instead of looking like they ended
+    // holding a card.
+    {
+      const handCounts = {};
+      for (const p of players) handCounts[p.id] = (r.hands[p.id] || []).length;
+      updateHandCounts(handCounts);
+    }
 
     // Show speed button when there are AI players (host only)
     if (r.phase === PHASE.PLAY && isHost) {
@@ -135,9 +150,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (r.phase === PHASE.PLAY) {
-      const handCounts = {};
-      for (const p of players) handCounts[p.id] = (r.hands[p.id] || []).length;
-      updateHandCounts(handCounts);
       updateActivePlayer(r.activePlayerId);
       updateWishIndicator(r.wishRank);
       updateTrickPoints(r);
@@ -168,10 +180,12 @@ window.addEventListener('DOMContentLoaded', async () => {
       setTimeout(() => showRoundOverModal(_r, _ts), 1400);
     }
 
-    if (r.phase === PHASE.GAME_OVER) {
+    if (r.phase === PHASE.GAME_OVER && prevRoundPhase !== PHASE.GAME_OVER) {
       if (_replayActive) { saveGame(gs.totalScores); _replayActive = false; }
-      hideModal('modal-round-over');
-      showGameOverModal(gs.winningTeam, gs.totalScores);
+      disableActions();
+      // Delay so the final card/play that ended the game is visible first.
+      const _wt = gs.winningTeam, _ts = gs.totalScores;
+      setTimeout(() => { hideModal('modal-round-over'); showGameOverModal(_wt, _ts); }, 1400);
     }
 
     // Host: run AI
