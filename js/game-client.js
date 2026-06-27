@@ -21,6 +21,8 @@ let _replayActive = false;
 let _aiFastMode = false;
 let _lastTrickFirstPlayId = null;
 let _lastTrickPlaysLength = 0;
+let _thinkTimer = null;       // interval for the "고민중 (Ns)" indicator
+let _thinkActiveId = null;    // which player the indicator is currently tracking
 // card id → sender avatar, set after exchange so hand renders the badge
 const _receivedFromAvatar = new Map();
 
@@ -110,13 +112,18 @@ window.addEventListener('DOMContentLoaded', async () => {
       updateWishIndicator(r.wishRank);
       updateTrickPoints(r);
       const isMyTurn = r.activePlayerId === myPlayerId;
-      setStatus(isMyTurn ? '내 차례예요!' : `${getPlayerName(r.activePlayerId)}의 차례`);
+      const activeIsAI = !!players.find(p => p.id === r.activePlayerId)?.isAI;
+      if (isMyTurn) { clearThinkingIndicator(); setStatus('내 차례예요!'); }
+      else if (activeIsAI) startThinkingIndicator(r.activePlayerId);
+      else { clearThinkingIndicator(); setStatus(`${getPlayerName(r.activePlayerId)}의 차례`); }
       enableActions(isMyTurn, r.currentTrick);
 
       const myTichuCall = r.tichuCalls && r.tichuCalls[myPlayerId];
       document.getElementById('btn-tichu').style.display =
         (!r.tichuPlayed[myPlayerId] && (myTichuCall === null || myTichuCall === undefined)) ? '' : 'none';
     }
+
+    if (r.phase !== PHASE.PLAY) clearThinkingIndicator();
 
     if (r.phase === PHASE.DRAGON_GIVE && r.dragonGiveWinner === myPlayerId && !players.find(p => p.id === myPlayerId)?.isAI) {
       showDragonModal();
@@ -629,6 +636,7 @@ function disableActions() {
   document.getElementById('btn-bomb').style.display = 'none';
   document.getElementById('hand-area').classList.remove('my-turn');
   document.getElementById('btn-pass')?.classList.remove('pulse-hint');
+  clearThinkingIndicator();
 }
 
 function updateBombButton(currentTrick) {
@@ -1377,6 +1385,25 @@ function hideModal(id) {
   if (el._timer) { clearInterval(el._timer); el._timer = null; }
 }
 function setStatus(msg) { document.getElementById('status-bar').textContent = msg; }
+
+// Show "{name}의 차례", then "{name} 고민중 (Ns)" once an AI has been thinking
+// for ≥1s, so players know it's working (not frozen) and wait.
+function startThinkingIndicator(playerId) {
+  if (_thinkActiveId === playerId && _thinkTimer) return; // already tracking
+  clearThinkingIndicator();
+  _thinkActiveId = playerId;
+  const name = getPlayerName(playerId);
+  setStatus(`${name}의 차례`);
+  const start = Date.now();
+  _thinkTimer = setInterval(() => {
+    const secs = Math.floor((Date.now() - start) / 1000);
+    if (secs >= 1) setStatus(`${name} 고민중 (${secs}s)`);
+  }, 500);
+}
+function clearThinkingIndicator() {
+  if (_thinkTimer) { clearInterval(_thinkTimer); _thinkTimer = null; }
+  _thinkActiveId = null;
+}
 function log(msg) {
   const area = document.getElementById('log-area');
   const entry = document.createElement('div');
