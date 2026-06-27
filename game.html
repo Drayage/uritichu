@@ -310,6 +310,7 @@
       function setH() {
         document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
       }
+      window._fixAppHeight = setH; // let game code re-measure (e.g. after exchange)
       setH();
       addEventListener('resize', setH);
       addEventListener('orientationchange', setH);

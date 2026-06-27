@@ -170,6 +170,11 @@ function handlePhaseChange(phase, gs, r) {
     sfxExchange();
     showReceivedCards(r);
     log('게임 시작!');
+    // Hand is now confirmed (14 cards) — re-measure viewport height so the
+    // action buttons are correctly placed once the full hand renders.
+    window._fixAppHeight?.();
+    requestAnimationFrame(() => window._fixAppHeight?.());
+    setTimeout(() => window._fixAppHeight?.(), 200);
   }
   if (phase === PHASE.PLAY) {
     startBgMusic();
