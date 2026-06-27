@@ -962,6 +962,8 @@ function showRoundOverModal(r, totalScores) {
     const trickPts = calcCardPoints(r.trickWinners?.[pid] || []);
     const tl = p ? teamLabel(p.teamIndex) : '';
     const isFirst = i === 0;
+    // The last player never emptied their hand — show as 꼴등/미완주, not a place.
+    const isDnf = pid === r.lastPlayerId;
     const calledGrand = r.grandTichuCalls?.[pid] === true;
     const calledSmall = r.tichuCalls?.[pid] === true;
     let tichuBadge = '';
@@ -974,7 +976,9 @@ function showRoundOverModal(r, totalScores) {
         ? '<span class="tichu-badge tichu-success">🎯 티츄 성공 +100</span>'
         : '<span class="tichu-badge tichu-fail">🎯 티츄 실패 -100</span>';
     }
-    return `<div class="result-row"><span>${placeEmoji[i]} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
+    const place = isDnf ? '💀' : placeEmoji[i];
+    const dnfTag = isDnf ? ' <span class="result-dnf">꼴등·미완주</span>' : '';
+    return `<div class="result-row${isDnf ? ' result-row-dim' : ''}"><span>${place} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${dnfTag}${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
   }).join('');
 
   // One-two (따당): the losing team never finished — list them as 미완주 instead

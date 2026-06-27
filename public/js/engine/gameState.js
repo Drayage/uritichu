@@ -272,6 +272,9 @@ function endRound(gameState) {
     if (lastPlayer) r.finishOrder.push(lastPlayer);
   }
   r.lastPlayerHand = lastPlayer ? (r.hands[lastPlayer] || []) : [];
+  // The last player never emptied their hand — mark them so the UI shows them
+  // as 꼴등/미완주 rather than as a finished placement.
+  r.lastPlayerId = lastPlayer || null;
   const deltas = scoreRound({
     finishOrder: r.finishOrder, trickWinners: r.trickWinners,
     hands: { [lastPlayer]: r.lastPlayerHand },
