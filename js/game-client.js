@@ -1054,6 +1054,11 @@ function detectStateEffects(prev, curr) {
 
   // Trick won: pastTricks grew
   if (currPast > prevPast) {
+    // Record EVERY trick completed since the last seen state. Firebase RTDB can
+    // coalesce the host's rapid writes and deliver more than one new trick in a
+    // single update; recording only the last one would silently drop tricks
+    // from the replay and make the lead order look wrong.
+    for (let i = prevPast; i < currPast - 1; i++) recordTrick(cr.pastTricks[i]);
     const wonTrick = cr.pastTricks[currPast - 1];
     recordTrick(wonTrick);
     const pts = calcCardPoints(wonTrick.cards || []);
