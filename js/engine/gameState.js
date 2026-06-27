@@ -94,6 +94,7 @@ function playCards(gameState, playerId, combination, wishRank) {
   const cardIds = new Set(combination.cards.map(c => c.id));
   r.hands[playerId] = r.hands[playerId].filter(c => !cardIds.has(c.id));
   r.tichuPlayed[playerId] = true;
+  r.dogLeadPending = false; // cleared on any normal play; re-set by handleDog
 
   // ── Finish tracking: always here, before any special-card early returns ──
   if (r.hands[playerId].length === 0 && !r.finishOrder.includes(playerId)) {
@@ -203,6 +204,8 @@ function handleDog(gameState, playerId) {
 
   r.leadPlayerId = partner.id;
   r.activePlayerId = partner.id;
+  r.dogPlayerId = playerId;   // who played the dog (for the toast)
+  r.dogLeadPending = true;    // host pauses before the partner leads
   return { ok: true, dog: true, newLead: partner.id };
 }
 
