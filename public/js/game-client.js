@@ -1,4 +1,4 @@
-import { listenRoom, saveGameState, setRoomPhase } from './room-manager.js';
+import { listenRoom, saveGameState, setRoomPhase, initLocalRoom } from './room-manager.js';
 import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from './host-runner.js';
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
@@ -37,6 +37,14 @@ window.addEventListener('DOMContentLoaded', async () => {
   const autoStart = sessionStorage.getItem('autoStart') === 'true';
 
   if (!myPlayerId || !myRoomId) { window.location.href = './index.html'; return; }
+
+  // Solo mode runs entirely in-memory (no Firebase). Set up the local room
+  // from the config the lobby stashed before navigating here.
+  if (sessionStorage.getItem('soloMode') === 'true') {
+    const soloPlayers = JSON.parse(sessionStorage.getItem('soloPlayers') || '[]');
+    const savedSolo = sessionStorage.getItem('soloGameState') || '';
+    if (soloPlayers.length === 4) initLocalRoom(soloPlayers, myPlayerId, savedSolo);
+  }
 
   sessionStorage.removeItem('autoStart');
   setupButtonListeners();

@@ -1,4 +1,12 @@
-import { db, ref, set, update, get, onValue, remove, runTransaction } from './firebase-app.js';
+// Firebase is loaded LAZILY (only for online play) so that solo/offline mode
+// never depends on the Firebase CDN. The import is from gstatic; making it a
+// hard top-level dependency would break the whole app (incl. solo) whenever
+// that CDN is unreachable.
+let _fbPromise = null;
+function _fb() {
+  if (!_fbPromise) _fbPromise = import('./firebase-app.js');
+  return _fbPromise;
+}
 
 function genRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
@@ -11,16 +19,47 @@ function genPlayerId() {
 const AI_NAMES = ['냥이', '토순이', '곰돌이', '여우'];
 const AI_AVATARS = ['🐱', '🐰', '🐻', '🦊'];
 
-function roomRef(roomId) {
-  return ref(db, `tichu/rooms/${roomId}`);
+// ── Local (offline) backend ───────────────────────────────────────────────
+// Solo games run entirely in-memory, with no Firebase round-trips. This makes
+// solo immune to the online write races, faster, and fully offline-capable.
+// The functions below mirror the Firebase ones so game-client / host-runner
+// work unchanged once local mode is enabled.
+let _localMode = false;
+let _localRoom = null; // { phase, players:{id:p}, gameStateJson, hostId, listeners:Set }
+
+function initLocalRoom(players, hostId, savedGameStateJson = '') {
+  _localMode = true;
+  _localRoom = {
+    phase: savedGameStateJson ? 'playing' : 'lobby',
+    players: Object.fromEntries(players.map(p => [p.id, p])),
+    gameStateJson: savedGameStateJson || '',
+    hostId,
+    listeners: new Set(),
+  };
+}
+function isLocalMode() { return _localMode; }
+
+function _localPayload() {
+  const d = _localRoom;
+  return {
+    phase: d.phase,
+    hostId: d.hostId,
+    players: Object.values(d.players).sort((a, b) => a.seat - b.seat),
+    gameState: d.gameStateJson ? JSON.parse(d.gameStateJson) : null,
+  };
+}
+function _localNotify() {
+  const payload = _localPayload();
+  for (const cb of _localRoom.listeners) queueMicrotask(() => cb(payload));
 }
 
 // Returns { roomId, playerId, isHost }
 async function createRoom(playerName, avatar = '🙂') {
+  const { db, ref, set } = await _fb();
   const roomId = genRoomId();
   const playerId = genPlayerId();
   const player = { id: playerId, name: playerName, seat: 0, teamIndex: 0, isAI: false, avatar };
-  await set(roomRef(roomId), {
+  await set(ref(db, `tichu/rooms/${roomId}`), {
     hostId: playerId,
     phase: 'lobby',
     players: { [playerId]: player },
@@ -32,7 +71,8 @@ async function createRoom(playerName, avatar = '🙂') {
 
 // Returns { roomId, playerId, isHost } or throws
 async function joinRoom(roomId, playerName, avatar = '🙂') {
-  const snap = await get(roomRef(roomId));
+  const { db, ref, get, update } = await _fb();
+  const snap = await get(ref(db, `tichu/rooms/${roomId}`));
   if (!snap.exists()) throw new Error('방을 찾을 수 없어요');
   const data = snap.val();
   if (data.phase !== 'lobby') throw new Error('이미 게임이 시작됐어요');
@@ -48,7 +88,8 @@ async function joinRoom(roomId, playerName, avatar = '🙂') {
 }
 
 async function addAI(roomId) {
-  const snap = await get(roomRef(roomId));
+  const { db, ref, get, update } = await _fb();
+  const snap = await get(ref(db, `tichu/rooms/${roomId}`));
   if (!snap.exists()) return;
   const data = snap.val();
   const existing = Object.values(data.players || {});
@@ -61,11 +102,13 @@ async function addAI(roomId) {
 }
 
 async function removeAI(roomId, aiPlayerId) {
+  const { db, ref, remove } = await _fb();
   await remove(ref(db, `tichu/rooms/${roomId}/players/${aiPlayerId}`));
 }
 
 async function fillWithAI(roomId) {
-  const snap = await get(roomRef(roomId));
+  const { db, ref, get, update } = await _fb();
+  const snap = await get(ref(db, `tichu/rooms/${roomId}`));
   if (!snap.exists()) return;
   const data = snap.val();
   const existing = Object.values(data.players || {});
@@ -80,12 +123,21 @@ async function fillWithAI(roomId) {
 }
 
 // Write game state as JSON string (avoids RTDB null-stripping issues).
-// Uses a seq-guarded transaction: the write only commits if the stored state
-// still has the same seq the caller based its action on. This rejects stale /
-// duplicate writes (online race), preventing "plays getting eaten" and the
-// double-apply that skips the trick winner's lead. Returns true if committed.
+// Online: a seq-guarded transaction — the write only commits if the stored
+// state still has the same seq the caller based its action on. This rejects
+// stale / duplicate writes (online race), preventing "plays getting eaten"
+// and the double-apply that skips the trick winner's lead. Returns true if
+// committed.
 async function saveGameState(roomId, gameState) {
   const baseSeq = gameState.seq || 0;
+  if (_localMode) {
+    // Single-threaded, no concurrency — just store and notify.
+    _localRoom.gameStateJson = JSON.stringify({ ...gameState, seq: baseSeq + 1 });
+    try { sessionStorage.setItem('soloGameState', _localRoom.gameStateJson); } catch (e) {}
+    _localNotify();
+    return true;
+  }
+  const { db, ref, runTransaction } = await _fb();
   const gsRef = ref(db, `tichu/rooms/${roomId}/gameStateJson`);
   const res = await runTransaction(gsRef, (currentJson) => {
     let curSeq = 0;
@@ -97,24 +149,37 @@ async function saveGameState(roomId, gameState) {
 }
 
 async function setRoomPhase(roomId, phase) {
-  await update(roomRef(roomId), { phase });
+  if (_localMode) { _localRoom.phase = phase; _localNotify(); return; }
+  const { db, ref, update } = await _fb();
+  await update(ref(db, `tichu/rooms/${roomId}`), { phase });
 }
 
 function listenRoom(roomId, callback) {
-  return onValue(roomRef(roomId), snap => {
-    if (!snap.exists()) return;
-    const data = snap.val();
-    const players = Object.values(data.players || {}).sort((a, b) => a.seat - b.seat);
-    const gameState = data.gameStateJson ? JSON.parse(data.gameStateJson) : null;
-    callback({ ...data, players, gameState });
+  if (_localMode) {
+    _localRoom.listeners.add(callback);
+    queueMicrotask(() => callback(_localPayload())); // initial fire
+    return () => _localRoom.listeners.delete(callback);
+  }
+  let unsub = () => {};
+  _fb().then(({ db, ref, onValue }) => {
+    unsub = onValue(ref(db, `tichu/rooms/${roomId}`), snap => {
+      if (!snap.exists()) return;
+      const data = snap.val();
+      const players = Object.values(data.players || {}).sort((a, b) => a.seat - b.seat);
+      const gameState = data.gameStateJson ? JSON.parse(data.gameStateJson) : null;
+      callback({ ...data, players, gameState });
+    });
   });
+  return () => unsub();
 }
 
 async function getLatestGameState(roomId) {
-  const snap = await get(roomRef(roomId));
+  if (_localMode) return _localRoom.gameStateJson ? JSON.parse(_localRoom.gameStateJson) : null;
+  const { db, ref, get } = await _fb();
+  const snap = await get(ref(db, `tichu/rooms/${roomId}`));
   if (!snap.exists()) return null;
   const data = snap.val();
   return data.gameStateJson ? JSON.parse(data.gameStateJson) : null;
 }
 
-export { createRoom, joinRoom, addAI, removeAI, fillWithAI, saveGameState, setRoomPhase, listenRoom, getLatestGameState };
+export { createRoom, joinRoom, addAI, removeAI, fillWithAI, saveGameState, setRoomPhase, listenRoom, getLatestGameState, initLocalRoom, isLocalMode };
