@@ -3,11 +3,11 @@ import { initHostRunner, onRoomStateChange, hostStartRound, setAIFastMode } from
 import { startRound, setGrandTichu, submitExchange, callTichu, playCards, pass, giveDragonTrick, PHASE } from './engine/gameState.js';
 import { detectCombination, canBeat, getBombs, getValidMoves, TYPE } from './engine/combinations.js';
 import { sfxCard, sfxPass, sfxTrickWon, sfxBomb, sfxFinish, sfxTichu, sfxDragon, sfxRoundOver, sfxError, sfxExchange, startBgMusic, stopBgMusic, toggleMute } from './audio.js';
-import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame, setBuildInfo } from './replay.js';
+import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame, setBuildInfo, openRoundReplay, closeRoundReplay, replayPrev, replayNext } from './replay.js';
 
 // Bump alongside the SW cache version each deploy; embedded into replay records
 // so an export reveals which build the game was actually played on.
-const APP_VERSION = 'v19';
+const APP_VERSION = 'v20';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -997,8 +997,13 @@ function showRoundOverModal(r, totalScores) {
         : '<span class="tichu-badge tichu-fail">🎯 티츄 실패 -100</span>';
     }
     const place = isDnf ? '💀' : placeEmoji[i];
-    const dnfTag = isDnf ? ' <span class="result-dnf">꼴등·미완주</span>' : '';
-    return `<div class="result-row${isDnf ? ' result-row-dim' : ''}"><span>${place} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${dnfTag}${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
+    // Finishers are marked 완주; the last player shows how many cards they were
+    // stuck with (남은 패 장수).
+    const leftCount = r.lastPlayerHand?.length ?? 0;
+    const statusTag = isDnf
+      ? ` <span class="result-dnf">미완주 · ${leftCount}장 남음</span>`
+      : ' <span class="result-done">완주</span>';
+    return `<div class="result-row${isDnf ? ' result-row-dim' : ''}"><span>${place} ${escHtml(getPlayerName(pid))} <span class="result-team">${tl}</span>${statusTag}${tichuBadge}</span><span class="result-pts">${trickPts !== 0 ? trickPts+'점' : '-'}</span></div>`;
   }).join('');
 
   // One-two (따당): the losing team never finished — list them as 미완주 instead
@@ -1114,6 +1119,9 @@ function detectStateEffects(prev, curr) {
   const currFinish = cr.finishOrder?.length || 0;
   for (let i = prevFinish; i < currFinish; i++) {
     const pid = cr.finishOrder[i];
+    // The last player never emptied their hand (pushed into finishOrder only at
+    // round end) — they're 미완주, so don't show a "완주" toast for them.
+    if (pid === cr.lastPlayerId) continue;
     const place = i + 1;
     const calledGrand = cr.grandTichuCalls?.[pid] === true;
     const calledTichu = cr.tichuCalls?.[pid] === true;
@@ -1191,6 +1199,10 @@ function showSurrenderModal() {
   showModal('modal-surrender');
 }
 window._showSurrenderModal = showSurrenderModal;
+window._openRoundReplay = openRoundReplay;
+window._closeRoundReplay = closeRoundReplay;
+window._replayPrev = replayPrev;
+window._replayNext = replayNext;
 
 // Save the in-progress game to records (marked 중단) with a snapshot of the
 // live state for bug analysis, then return to the lobby.

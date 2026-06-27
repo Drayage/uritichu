@@ -210,7 +210,24 @@
       <div style="font-size:40px; margin-bottom:8px;">🎊</div>
       <h2>라운드 종료!</h2>
       <div id="round-result" style="margin:16px 0;"></div>
+      <button class="btn btn-ghost btn-full" id="btn-round-replay" style="margin-bottom:8px; font-size:13px;" onclick="window._openRoundReplay()">📼 이 라운드 다시보기</button>
       <button class="btn btn-primary btn-full" id="btn-next-round">다음 라운드 →</button>
+    </div>
+  </div>
+
+  <!-- Single-round replay (opened from the round-over screen) -->
+  <div class="modal-overlay" id="modal-round-replay" style="display:none; z-index:1100;" onclick="if(event.target===this)window._closeRoundReplay()">
+    <div class="modal replay-modal">
+      <div class="replay-modal-header">
+        <span class="replay-modal-title">📼 이 라운드 다시보기</span>
+        <button class="replay-close-btn" onclick="window._closeRoundReplay()">✕</button>
+      </div>
+      <div class="replay-nav-bar">
+        <button id="replay-prev" class="replay-nav-btn" onclick="window._replayPrev()">◀</button>
+        <span id="replay-trick-pos" class="replay-pos-label"></span>
+        <button id="replay-next" class="replay-nav-btn" onclick="window._replayNext()">▶</button>
+      </div>
+      <div id="replay-trick-display" class="replay-trick-display"></div>
     </div>
   </div>
 

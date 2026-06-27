@@ -350,3 +350,19 @@ export function replayNext() {
   if (_viewTrick < total - 1) { _viewTrick++; renderTrickView(); }
 }
 export function replayBackToList() { showList(); }
+
+// ── In-game single-round replay (from the round-over screen) ──
+// Views the most-recently-finished round of the in-progress recording.
+export function openRoundReplay() {
+  if (!_rec || !_rec.rounds.length) return;
+  _viewGame = _rec;
+  _viewRound = _rec.rounds.length - 1;
+  _viewTrick = -1;
+  const m = document.getElementById('modal-round-replay');
+  if (m) m.style.display = 'flex';
+  renderTrickView();
+}
+export function closeRoundReplay() {
+  const m = document.getElementById('modal-round-replay');
+  if (m) m.style.display = 'none';
+}
