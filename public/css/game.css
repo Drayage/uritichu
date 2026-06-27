@@ -922,7 +922,6 @@ body { overflow: hidden; height: 100vh; background: transparent; }
 .result-team { font-size: 10px; font-weight: 700; color: var(--text-light); }
 .result-row-dim { opacity: 0.55; }
 .result-dnf { font-size: 10px; font-weight: 700; color: var(--text-light); background: rgba(201,184,245,0.18); border-radius: 6px; padding: 1px 6px; }
-.result-done { font-size: 10px; font-weight: 800; color: var(--mint-dark, #2c8c74); background: rgba(178,240,224,0.30); border-radius: 6px; padding: 1px 6px; }
 .tichu-badge {
   display: inline-block;
   margin-left: 5px;

@@ -247,6 +247,33 @@ function pTeam(pid) { return _viewGame.players.find(p => p.id === pid)?.teamInde
 function pAvatar(pid) { return _viewGame.players.find(p => p.id === pid)?.avatar || '🙂'; }
 function teamCls(pid) { return pTeam(pid) === 0 ? 'team-a-text' : 'team-b-text'; }
 
+// Remaining cards per player after trick `idx` (idx = -1 → before any trick).
+function remainingAfter(round, idx) {
+  const counts = {};
+  for (const p of _viewGame.players) {
+    const start = (round.startHands?.[p.id] || []).length;
+    let played = 0;
+    for (let t = 0; t <= idx; t++) {
+      for (const pl of (round.tricks[t]?.plays || [])) {
+        if (pl.playerId === p.id) played += pl.cards.length;
+      }
+    }
+    counts[p.id] = Math.max(0, start - played);
+  }
+  return counts;
+}
+
+// Compact bar showing each player's remaining hand size at the current trick.
+function countBar(round, idx) {
+  const counts = remainingAfter(round, idx);
+  const cells = _viewGame.players.map(p => {
+    const n = counts[p.id];
+    const done = n === 0 && (round.startHands?.[p.id]?.length || 0) > 0;
+    return `<span class="replay-count ${teamCls(p.id)}${done ? ' replay-count-done' : ''}">${p.avatar} ${n}장${done ? ' ✔' : ''}</span>`;
+  }).join('');
+  return `<div class="replay-count-bar">${cells}</div>`;
+}
+
 function renderTrickView() {
   const round = _viewGame.rounds[_viewRound];
   const total = round?.tricks?.length ?? 0;
@@ -259,14 +286,14 @@ function renderTrickView() {
     pos.textContent = '초기 패';
     prevBtn.disabled = true;
     nextBtn.disabled = total === 0;
-    display.innerHTML = renderHands(round);
+    display.innerHTML = countBar(round, -1) + renderHands(round);
     return;
   }
 
   pos.textContent = `트릭 ${_viewTrick + 1} / ${total}`;
   prevBtn.disabled = false;
   nextBtn.disabled = _viewTrick >= total - 1;
-  display.innerHTML = renderTrick(round, _viewTrick);
+  display.innerHTML = countBar(round, _viewTrick) + renderTrick(round, _viewTrick);
 }
 
 function renderHands(round) {
