@@ -1050,7 +1050,10 @@ function detectStateEffects(prev, curr) {
     if (!pr.grandTichuCalls?.[pid] && cr.grandTichuCalls?.[pid] === true) showTichuCallToast(pid, true);
   }
 
-  if (pr.phase !== 'play') return;
+  // Process gameplay effects whenever the previous state was in play OR a dragon
+  // hand-off (dragon_give -> play completes a trick). Skipping dragon_give here
+  // dropped dragon-won tricks from the replay entirely.
+  if (pr.phase !== 'play' && pr.phase !== 'dragon_give') return;
 
   const prevPast = pr.pastTricks?.length || 0;
   const currPast = cr.pastTricks?.length || 0;
