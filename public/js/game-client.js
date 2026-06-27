@@ -93,6 +93,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     myHand = (r.hands && r.hands[myPlayerId]) ? r.hands[myPlayerId] : [];
     renderMyHand();
     updateScores(gs.totalScores);
+    updateHud(gs, r);
     updateTichuBadges(r.tichuCalls, r.grandTichuCalls);
     updateFinishBadges(r.finishOrder);
     renderTrick(r.currentTrick);
@@ -132,8 +133,11 @@ window.addEventListener('DOMContentLoaded', async () => {
 
     if (r.phase === PHASE.ROUND_OVER && prevRoundPhase !== PHASE.ROUND_OVER) {
       recordRoundEnd(r.scoreDeltas, r.finishOrder);
-      showRoundOverModal(r, gs.totalScores);
       disableActions();
+      // Delay the result modal so the final play/trick that ended the round
+      // is visible before the popup covers it.
+      const _r = r, _ts = gs.totalScores;
+      setTimeout(() => showRoundOverModal(_r, _ts), 1400);
     }
 
     if (r.phase === PHASE.GAME_OVER) {
@@ -616,6 +620,19 @@ function updateScores(scores) {
   if (!scores) return;
   document.getElementById('score-a').textContent = scores.team0 || 0;
   document.getElementById('score-b').textContent = scores.team1 || 0;
+}
+
+// Round / trick / team-score HUD (always visible, incl. mobile where sidebar is hidden)
+function updateHud(gs, r) {
+  const roundNo = (gs.rounds?.length || 0) + 1;
+  const trickNo = (r?.pastTricks?.length || 0) + 1;
+  const a = gs.totalScores?.team0 || 0;
+  const b = gs.totalScores?.team1 || 0;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set('hud-round', roundNo);
+  set('hud-trick', trickNo);
+  set('hud-score-a', a);
+  set('hud-score-b', b);
 }
 
 function enableActions(isMyTurn, currentTrick) {
