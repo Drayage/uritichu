@@ -55,7 +55,7 @@ function _localNotify() {
 
 // Returns { roomId, playerId, isHost }
 async function createRoom(playerName, avatar = '🙂') {
-  const { db, ref, set } = await _fb();
+  const { db, ref, set, onDisconnect } = await _fb();
   const roomId = genRoomId();
   const playerId = genPlayerId();
   const player = { id: playerId, name: playerName, seat: 0, teamIndex: 0, isAI: false, avatar };
@@ -66,12 +66,15 @@ async function createRoom(playerName, avatar = '🙂') {
     gameStateJson: '',
     createdAt: Date.now(),
   });
+  // 탭 종료/네트워크 단절 시 내 좌석만 자동으로 비운다 (room/gameStateJson은 그대로
+  // 둬야 나머지 인원이 이어서 진행하거나, 재접속 시 상태를 복원할 수 있다).
+  onDisconnect(ref(db, `tichu/rooms/${roomId}/players/${playerId}`)).remove();
   return { roomId, playerId, isHost: true };
 }
 
 // Returns { roomId, playerId, isHost } or throws
 async function joinRoom(roomId, playerName, avatar = '🙂') {
-  const { db, ref, get, update } = await _fb();
+  const { db, ref, get, update, onDisconnect } = await _fb();
   const snap = await get(ref(db, `tichu/rooms/${roomId}`));
   if (!snap.exists()) throw new Error('방을 찾을 수 없어요');
   const data = snap.val();
@@ -84,6 +87,7 @@ async function joinRoom(roomId, playerName, avatar = '🙂') {
   const seat = [0,1,2,3].find(s => !takenSeats.includes(s));
   const player = { id: playerId, name: playerName, seat, teamIndex: seat % 2, isAI: false, avatar };
   await update(ref(db, `tichu/rooms/${roomId}/players`), { [playerId]: player });
+  onDisconnect(ref(db, `tichu/rooms/${roomId}/players/${playerId}`)).remove();
   return { roomId, playerId, isHost: false };
 }
 

@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import { getDatabase, ref, set, update, get, onValue, push, remove, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
+import { getDatabase, ref, set, update, get, onValue, push, remove, runTransaction, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js';
 
 // ⚠️  Firebase 프로젝트 설정값을 여기에 입력하세요
 // Firebase 콘솔 → 프로젝트 설정 → 앱 추가 → 웹 → 구성 복사
@@ -16,4 +16,4 @@ const FIREBASE_CONFIG = {
 const app = initializeApp(FIREBASE_CONFIG);
 const db = getDatabase(app);
 
-export { db, ref, set, update, get, onValue, push, remove, runTransaction };
+export { db, ref, set, update, get, onValue, push, remove, runTransaction, onDisconnect };

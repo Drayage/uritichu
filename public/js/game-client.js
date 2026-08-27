@@ -7,7 +7,7 @@ import { startRecording, recordRoundStart, recordTrick, recordRoundEnd, saveGame
 
 // Bump alongside the SW cache version each deploy; embedded into replay records
 // so an export reveals which build the game was actually played on.
-const APP_VERSION = 'v23';
+const APP_VERSION = 'v24';
 
 // ── State ──
 let myPlayerId, mySeat, myTeam, myRoomId, isHost;
@@ -27,6 +27,7 @@ let _lastTrickFirstPlayId = null;
 let _lastTrickPlaysLength = 0;
 let _thinkTimer = null;       // interval for the "고민중 (Ns)" indicator
 let _thinkActiveId = null;    // which player the indicator is currently tracking
+const _disconnectTimers = new Map(); // playerId -> setTimeout handle (30초 유예 중인 이탈 후보)
 // card id → sender avatar, set after exchange so hand renders the badge
 const _receivedFromAvatar = new Map();
 
@@ -88,6 +89,13 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!gs || !gs.currentRound) return;
+
+    // Detect a human co-player's disconnect (room-manager registers
+    // onDisconnect().remove() on each player's own entry, so their seat drops
+    // out of room.players when their tab closes / network dies). Warn right
+    // away, but give 30s to reconnect before actually ending the game — a
+    // refresh or brief network blip shouldn't nuke everyone else's match.
+    if (!gs.gameOver) watchPlayerPresence(gs.players || []);
 
     // Replay recording: start at first round's grand-tichu phase
     const r0 = gs.currentRound;
@@ -1092,14 +1100,20 @@ function detectStateEffects(prev, curr) {
   const prevPast = pr.pastTricks?.length || 0;
   const currPast = cr.pastTricks?.length || 0;
 
-  // Card play sound for other players (local player already hears sfxCard in doPlay)
+  // Card play sound + zone flash for other players (local player already gets
+  // this instantly in doPlay). Firebase RTDB can coalesce several rapid writes
+  // into a single onValue update, so more than one new play can land between
+  // prev and curr — loop over ALL of them, not just the last one, or earlier
+  // plays' sound/flash silently get dropped.
   const prevPlays = pr.currentTrick?.plays?.length ?? 0;
   const currPlays = cr.currentTrick?.plays?.length ?? 0;
-  if (currPlays > prevPlays && pr.activePlayerId && pr.activePlayerId !== myPlayerId) {
-    if (!_aiFastMode) {
-      const lastCombo = cr.currentTrick.plays[cr.currentTrick.plays.length - 1]?.combination;
-      if (lastCombo?.isBomb) sfxBomb();
+  if (currPlays > prevPlays && !_aiFastMode) {
+    for (let i = prevPlays; i < currPlays; i++) {
+      const play = cr.currentTrick.plays[i];
+      if (!play || play.playerId === myPlayerId) continue;
+      if (play.combination?.isBomb) sfxBomb();
       else sfxCard();
+      showPlayEffect(play.playerId);
     }
   }
 
@@ -1275,6 +1289,31 @@ function showWarnToast(msg) {
   toast.textContent = msg;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 2200);
+}
+
+// expectedPlayers: the fixed 4-player roster the current match started with
+// (gs.players). Compares it against the live room.players (which room-manager
+// keeps in sync via onDisconnect().remove()) to spot a human who dropped out.
+function watchPlayerPresence(expectedPlayers) {
+  const liveIds = new Set(players.map(p => p.id));
+  for (const p of expectedPlayers) {
+    if (p.isAI || p.id === myPlayerId) continue;
+    if (liveIds.has(p.id)) {
+      const pending = _disconnectTimers.get(p.id);
+      if (pending) { clearTimeout(pending); _disconnectTimers.delete(p.id); }
+      continue;
+    }
+    if (_disconnectTimers.has(p.id)) continue; // already counting down
+    showWarnToast(`⚠️ ${p.name} 님의 연결이 끊어졌어요. 30초 안에 돌아오지 않으면 게임이 종료됩니다.`);
+    const timer = setTimeout(() => {
+      _disconnectTimers.delete(p.id);
+      if (currentGs?.gameOver) return; // 그 사이 게임이 정상 종료됨
+      if (players.some(x => x.id === p.id)) return; // 그 사이 돌아옴
+      showWarnToast(`${p.name} 님이 돌아오지 않아 게임을 종료합니다.`);
+      setTimeout(() => window._surrenderAndExit(), 1500);
+    }, 30000);
+    _disconnectTimers.set(p.id, timer);
+  }
 }
 
 function showDogToast(newLeadId, dogPlayerId) {
